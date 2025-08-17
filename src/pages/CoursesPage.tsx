@@ -58,9 +58,12 @@ export default function CoursesPage() {
         response = await api.getCourses(searchCriteria);
       }
       
-      setCourses(response?.content || response || []);
+      // Ensure we always set an array, even if response is null/undefined
+      const coursesData = response?.content || response || [];
+      setCourses(Array.isArray(coursesData) ? coursesData : []);
     } catch (error) {
       console.error('Failed to load courses:', error);
+      setCourses([]); // Set empty array on error
       toast({
         title: "Error",
         description: "Failed to load courses. Please try again.",
