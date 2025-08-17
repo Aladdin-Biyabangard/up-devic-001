@@ -12,7 +12,7 @@ import heroImage from "@/assets/hero-education.jpg";
 
 export default function HomePage() {
   const [popularCourses, setPopularCourses] = useState<Course[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -28,7 +28,6 @@ export default function HomePage() {
         api.getPopularCourses(),
         api.getCategories()
       ]);
-      
       setPopularCourses(Array.isArray(coursesResponse) ? coursesResponse : []);
       setCategories(Array.isArray(categoriesResponse) ? categoriesResponse : []);
     } catch (error) {
@@ -139,16 +138,16 @@ export default function HomePage() {
           <div className="flex flex-wrap gap-3 justify-center mb-8">
             {categories.slice(0, 8).map((category, index) => (
               <div 
-                key={category}
+                key={index}
                 className="animate-fade-in"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <Link to={`/courses?category=${encodeURIComponent(category)}`}>
+                <Link to={`/courses?category=${encodeURIComponent(category?.category)}`}>
                   <Badge 
                     variant="secondary" 
                     className="text-sm py-2 px-4 hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
                   >
-                    {category}
+                    {category?.category}
                   </Badge>
                 </Link>
               </div>

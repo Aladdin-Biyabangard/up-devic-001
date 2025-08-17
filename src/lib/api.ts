@@ -1,5 +1,7 @@
 // API Configuration and utilities for UpDevic Course Platform
-const API_BASE_URL = 'https://up-devic-001.onrender.com/api';
+const API_BASE_URL = import.meta.env.DEV
+  ? "/api" // Use proxy in development
+  : "https://up-devic-001.onrender.com/api";
 
 // API client with error handling and loading states
 export class ApiClient {
@@ -22,51 +24,62 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
+        // 'Accept': 'application/json',
+        // 'Access-Control-Allow-Origin': '*',
         ...options.headers,
       },
+      mode: "cors",
+      credentials: "omit",
       ...options,
     };
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error("API request failed:", error);
       throw error;
     }
   }
 
   // Course endpoints
-  async getCourses(searchCriteria?: any) {
-    return this.request('/course/search', {
-      method: 'POST',
-      body: JSON.stringify(searchCriteria || {}),
+  async getCourses(searchCriteria?: Record<string, any>) {
+    const filtered = Object.fromEntries(
+      Object.entries(searchCriteria || {}).filter(([_, v]) => v !== undefined)
+    );
+  
+    const query = Object.keys(filtered).length
+      ? "?" + new URLSearchParams(filtered as Record<string, string>).toString()
+      : "";
+  
+    return this.request(`/v1/course/search${query}`, {
+      method: "GET",
     });
   }
 
   async getCourse(courseId: string) {
-    return this.request(`/course/${courseId}`);
+    return this.request(`/v1/course/${courseId}`);
   }
 
   async getPopularCourses() {
-    return this.request('/course/popular-courses');
+    return this.request("/v1/course/popular-courses");
   }
 
   async getCategories() {
-    return this.request('/course/categories');
+    return this.request("/v1/course/categories");
   }
 
   async getCoursesByCategory(category: string) {
-    return this.request(`/course/category?category=${category}`);
+    return this.request(`/v1/course/category?categoryType=${category}&page=0&size=100`);
   }
 
   // Lesson endpoints
@@ -80,21 +93,26 @@ export class ApiClient {
 
   // User/Auth endpoints
   async login(credentials: { email: string; password: string }) {
-    return this.request('/auth/sign-in', {
-      method: 'POST',
+    return this.request("/v1/auth/sign-in", {
+      method: "POST",
       body: JSON.stringify(credentials),
     });
   }
 
-  async register(userData: { email: string; password: string; firstName: string; lastName: string }) {
-    return this.request('/auth/sign-up', {
-      method: 'POST',
+  async register(userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+  }) {
+    return this.request("/v1/auth/sign-up", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
   }
 
   async getUserProfile() {
-    return this.request('/users/-profile');
+    return this.request("/v1/users/-profile");
   }
 
   // Comment endpoints
@@ -108,18 +126,18 @@ export class ApiClient {
 
   async addCommentToCourse(courseId: string, comment: string) {
     return this.request(`/v1/comments/courses${courseId}`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ content: comment }),
     });
   }
 
   // Teacher endpoints
   async getTeacherInfo() {
-    return this.request('/teacher/info');
+    return this.request("/teacher/info");
   }
 
   async getTeacherCourses() {
-    return this.request('/teacher/courses');
+    return this.request("/teacher/courses");
   }
 
   async searchTeachers(query: string) {
@@ -128,32 +146,32 @@ export class ApiClient {
 
   // Student endpoints
   async getStudentCourses() {
-    return this.request('/students/courses');
+    return this.request("/students/courses");
   }
 
   async requestToBecomeTeacher() {
-    return this.request('/students/for-teacher');
+    return this.request("/students/for-teacher");
   }
 
   // Payment endpoints
   async checkout(courseId: string) {
-    return this.request('/payment', {
-      method: 'POST',
+    return this.request("/payment", {
+      method: "POST",
       body: JSON.stringify({ courseId }),
     });
   }
 
   async getTeacherBalance() {
-    return this.request('/payment/balance');
+    return this.request("/payment/balance");
   }
 
   // Admin endpoints
   async getAllUsers() {
-    return this.request('/admin/users');
+    return this.request("/admin/users");
   }
 
   async getUsersCount() {
-    return this.request('/admin/users/count');
+    return this.request("/admin/users/count");
   }
 }
 
@@ -161,7 +179,7 @@ export const api = ApiClient.getInstance();
 
 // Type definitions based on the API
 export interface Course {
-  id: string;
+  courseId: string;
   title: string;
   description: string;
   price: number;
@@ -187,7 +205,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'STUDENT' | 'TEACHER' | 'ADMIN';
+  role: "STUDENT" | "TEACHER" | "ADMIN";
   profileImageUrl?: string;
 }
 

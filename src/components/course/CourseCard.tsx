@@ -26,7 +26,7 @@ export function CourseCard({
     e.preventDefault();
     e.stopPropagation();
     if (onWishlistToggle) {
-      onWishlistToggle(course.id);
+      onWishlistToggle(course?.courseId);
     }
   };
 
@@ -117,7 +117,7 @@ export function CourseCard({
         </div>
         
         <Button className="btn-hero" asChild>
-          <Link to={`/courses/${course.id}`}>
+          <Link to={`/courses/${course?.courseId}`}>
             View Course
           </Link>
         </Button>

@@ -13,7 +13,7 @@ import { PageLoader } from "@/components/ui/loading-spinner";
 export default function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [courses, setCourses] = useState<Course[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
@@ -46,7 +46,6 @@ export default function CoursesPage() {
       const searchCriteria = {
         query: searchQuery || undefined,
         category: categoryFilter,
-        sortBy,
         priceRange: priceRange !== "all" ? priceRange : undefined,
         page: 0,
         size: 50
@@ -136,9 +135,9 @@ export default function CoursesPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
+              {categories.map((category,index) => (
+                <SelectItem key={index} value={category?.category}>
+                  {category?.category}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -222,7 +221,7 @@ export default function CoursesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {courses.map((course, index) => (
               <div 
-                key={course.id}
+                key={index}
                 className="animate-fade-in"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
