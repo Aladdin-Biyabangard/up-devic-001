@@ -51,6 +51,7 @@ export default function CoursesPage() {
         size: 50
       };
 
+
       let response;
       if (categoryFilter && !searchQuery) {
         response = await api.getCoursesByCategory(categoryFilter);

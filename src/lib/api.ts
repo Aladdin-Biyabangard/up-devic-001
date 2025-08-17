@@ -28,8 +28,8 @@ export class ApiClient {
     const config: RequestInit = {
       headers: {
         "Content-Type": "application/json",
-        // 'Accept': 'application/json',
-        // 'Access-Control-Allow-Origin': '*',
+        'Accept': 'application/json',
+        'Access-Control-Allow-Origin': '*',
         ...options.headers,
       },
       mode: "cors",
@@ -56,11 +56,11 @@ export class ApiClient {
     const filtered = Object.fromEntries(
       Object.entries(searchCriteria || {}).filter(([_, v]) => v !== undefined)
     );
-  
+
     const query = Object.keys(filtered).length
       ? "?" + new URLSearchParams(filtered as Record<string, string>).toString()
       : "";
-  
+
     return this.request(`/v1/course/search${query}`, {
       method: "GET",
     });
@@ -79,7 +79,9 @@ export class ApiClient {
   }
 
   async getCoursesByCategory(category: string) {
-    return this.request(`/v1/course/category?categoryType=${category}&page=0&size=100`);
+    return this.request(
+      `/v1/course/category?categoryType=${category}&page=0&size=100`
+    );
   }
 
   // Lesson endpoints
@@ -91,7 +93,6 @@ export class ApiClient {
     return this.request(`/v1/lessons/${lessonId}`);
   }
 
-  // User/Auth endpoints
   async login(credentials: { email: string; password: string }) {
     return this.request("/v1/auth/sign-in", {
       method: "POST",
