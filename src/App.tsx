@@ -7,6 +7,8 @@ import { Header } from "@/components/layout/Header";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/layout/Navigation";
 import { useState } from "react";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import HomePage from "./pages/HomePage";
 import CoursesPage from "./pages/CoursesPage";
 import AuthPage from "./pages/AuthPage";
@@ -14,44 +16,59 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState(null); // This will be connected to auth context later
+  const { loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <div className="min-h-screen bg-background">
-            <Header 
-              user={user} 
-              onMenuToggle={() => setSidebarOpen(true)}
-              onSearch={(query) => {
-                window.location.href = `/courses?search=${encodeURIComponent(query)}`;
-              }}
-            />
-            
-            {/* Mobile Sidebar */}
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetContent side="left" className="p-0">
-                <SidebarNavigation user={user} onClose={() => setSidebarOpen(false)} />
-              </SheetContent>
-            </Sheet>
+    <div className="min-h-screen bg-background">
+      <Header 
+        onMenuToggle={() => setSidebarOpen(true)}
+        onSearch={(query) => {
+          window.location.href = `/courses?search=${encodeURIComponent(query)}`;
+        }}
+      />
+      
+      {/* Mobile Sidebar */}
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetContent side="left" className="p-0">
+          <SidebarNavigation onClose={() => setSidebarOpen(false)} />
+        </SheetContent>
+      </Sheet>
 
-            <main>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/courses" element={<CoursesPage />} />
-                <Route path="/auth" element={<AuthPage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </div>
-        </BrowserRouter>
-      </TooltipProvider>
+      <main>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/courses" element={<CoursesPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+    </div>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };

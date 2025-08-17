@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Home, 
   BookOpen, 
@@ -16,7 +17,7 @@ import {
 interface NavigationItem {
   label: string;
   href: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   role?: 'STUDENT' | 'TEACHER' | 'ADMIN';
 }
 
@@ -35,14 +36,14 @@ const navigationItems: NavigationItem[] = [
 ];
 
 interface NavigationProps {
-  user?: any;
   vertical?: boolean;
   className?: string;
   onItemClick?: () => void;
 }
 
-export function Navigation({ user, vertical = false, className, onItemClick }: NavigationProps) {
+export function Navigation({ vertical = false, className, onItemClick }: NavigationProps) {
   const location = useLocation();
+  const { user } = useAuth();
   
   const filteredItems = navigationItems.filter(item => {
     if (!item.role) return true;
@@ -85,17 +86,18 @@ export function Navigation({ user, vertical = false, className, onItemClick }: N
 }
 
 interface SidebarNavigationProps {
-  user?: any;
   onClose?: () => void;
 }
 
-export function SidebarNavigation({ user, onClose }: SidebarNavigationProps) {
+export function SidebarNavigation({ onClose }: SidebarNavigationProps) {
+  const { user } = useAuth();
+  
   return (
     <div className="p-4 space-y-4">
       <div className="text-sm font-medium text-muted-foreground px-2">
         Navigation
       </div>
-      <Navigation user={user} vertical onItemClick={onClose} />
+      <Navigation vertical onItemClick={onClose} />
       
       {user && (
         <>

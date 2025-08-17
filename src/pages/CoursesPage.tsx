@@ -9,6 +9,14 @@ import { api, Course } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
 
+interface CoursesResponse {
+  content?: Course[];
+  totalElements?: number;
+  totalPages?: number;
+  size?: number;
+  number?: number;
+}
+
 export default function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -17,7 +25,8 @@ export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
   const [sortBy, setSortBy] = useState("popular");
-  const [priceRange, setPriceRange] = useState("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -26,7 +35,7 @@ export default function CoursesPage() {
 
   useEffect(() => {
     loadCourses();
-  }, [searchQuery, selectedCategory, sortBy, priceRange]);
+  }, [searchQuery, selectedCategory, sortBy, minPrice, maxPrice]);
 
   const loadCategories = async () => {
     try {
@@ -44,21 +53,15 @@ export default function CoursesPage() {
       const categoryFilter = selectedCategory && selectedCategory !== "all" ? selectedCategory : undefined;
       const searchCriteria = {
         query: searchQuery || undefined,
-        category: categoryFilter,
-        priceRange: priceRange !== "all" ? priceRange : undefined,
+        courseCategoryType: categoryFilter,
+        min: minPrice ? parseFloat(minPrice) : undefined,
+        max: maxPrice ? parseFloat(maxPrice) : undefined,
         page: 0,
         size: 50
       };
 
-
-      let response;
-      if (categoryFilter && !searchQuery) {
-        response = await api.getCoursesByCategory(categoryFilter);
-      } else {
-        response = await api.getCourses(searchCriteria);
-      }
+      const response = await api.getCourses(searchCriteria) as CoursesResponse;
       
-      // Ensure we always set an array, even if response is null/undefined
       const coursesData = response?.content || response || [];
       setCourses(Array.isArray(coursesData) ? coursesData : []);
     } catch (error) {
@@ -78,6 +81,8 @@ export default function CoursesPage() {
     const params = new URLSearchParams();
     if (searchQuery) params.set("search", searchQuery);
     if (selectedCategory && selectedCategory !== "all") params.set("category", selectedCategory);
+    if (minPrice) params.set("minPrice", minPrice);
+    if (maxPrice) params.set("maxPrice", maxPrice);
     setSearchParams(params);
   };
 
@@ -85,11 +90,23 @@ export default function CoursesPage() {
     setSearchQuery("");
     setSelectedCategory("all");
     setSortBy("popular");
-    setPriceRange("all");
+    setMinPrice("");
+    setMaxPrice("");
     setSearchParams({});
   };
 
-  const hasActiveFilters = !!(searchQuery || (selectedCategory !== "all") || sortBy !== "popular" || priceRange !== "all");
+  const hasActiveFilters = !!(searchQuery || (selectedCategory !== "all") || sortBy !== "popular" || minPrice || maxPrice);
+
+  const formatPriceRange = () => {
+    if (minPrice && maxPrice) {
+      return `$${minPrice} - $${maxPrice}`;
+    } else if (minPrice) {
+      return `$${minPrice}+`;
+    } else if (maxPrice) {
+      return `Up to $${maxPrice}`;
+    }
+    return "";
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -156,18 +173,28 @@ export default function CoursesPage() {
             </SelectContent>
           </Select>
 
-          <Select value={priceRange} onValueChange={setPriceRange}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Price Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Prices</SelectItem>
-              <SelectItem value="free">Free</SelectItem>
-              <SelectItem value="0-50">$0 - $50</SelectItem>
-              <SelectItem value="50-100">$50 - $100</SelectItem>
-              <SelectItem value="100+">$100+</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Price:</span>
+            <Input
+              type="number"
+              placeholder="Min"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="w-20"
+              min="0"
+              step="0.01"
+            />
+            <span className="text-muted-foreground">-</span>
+            <Input
+              type="number"
+              placeholder="Max"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="w-20"
+              min="0"
+              step="0.01"
+            />
+          </div>
 
           {hasActiveFilters && (
             <Button variant="outline" onClick={clearFilters}>
@@ -194,9 +221,9 @@ export default function CoursesPage() {
                 Sort: {sortBy.replace('_', ' ')}
               </Badge>
             )}
-            {priceRange !== "all" && (
+            {formatPriceRange() && (
               <Badge variant="secondary">
-                Price: {priceRange}
+                Price: {formatPriceRange()}
               </Badge>
             )}
           </div>

@@ -1,7 +1,14 @@
 // API Configuration and utilities for UpDevic Course Platform
 const API_BASE_URL = "https://up-devic-001.onrender.com/api";
 
-// API client with error handling and loading states
+// JWT Token management
+interface JWTPayload {
+  exp: number;
+  sub: string;
+  email: string;
+  role: string;
+}
+
 export class ApiClient {
   private static instance: ApiClient;
   private baseURL: string;
@@ -17,6 +24,62 @@ export class ApiClient {
     return ApiClient.instance;
   }
 
+  // JWT Token utilities
+  public static decodeToken(token: string): JWTPayload | null {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1])) as JWTPayload;
+      return payload;
+    } catch {
+      return null;
+    }
+  }
+
+  public static isTokenExpired(token: string): boolean {
+    const payload = ApiClient.decodeToken(token);
+    if (!payload) return true;
+    return payload.exp * 1000 < Date.now();
+  }
+
+  public static getTokenExpirationTime(token: string): Date | null {
+    const payload = ApiClient.decodeToken(token);
+    if (!payload) return null;
+    return new Date(payload.exp * 1000);
+  }
+
+  public static getTokenPayload(token: string): JWTPayload | null {
+    return ApiClient.decodeToken(token);
+  }
+
+  public static getTokenTimeUntilExpiry(token: string): number | null {
+    const payload = ApiClient.decodeToken(token);
+    if (!payload) return null;
+    return payload.exp * 1000 - Date.now();
+  }
+
+  public static shouldRefreshToken(token: string, bufferMinutes: number = 5): boolean {
+    const timeUntilExpiry = ApiClient.getTokenTimeUntilExpiry(token);
+    if (timeUntilExpiry === null) return true;
+    return timeUntilExpiry < bufferMinutes * 60 * 1000; // Convert minutes to milliseconds
+  }
+
+  private isTokenExpired(token: string): boolean {
+    return ApiClient.isTokenExpired(token);
+  }
+
+  private getValidToken(): string | null {
+    const token = localStorage.getItem('auth_token');
+    if (!token || this.isTokenExpired(token)) {
+      localStorage.removeItem('auth_token');
+      return null;
+    }
+    return token;
+  }
+
+  private getAuthHeaders(): Record<string, string> {
+    const token = this.getValidToken();
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -28,6 +91,7 @@ export class ApiClient {
         "Content-Type": "application/json",
         'Accept': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        ...this.getAuthHeaders(),
         ...options.headers,
       },
       mode: "cors",
@@ -37,6 +101,12 @@ export class ApiClient {
 
     try {
       const response = await fetch(url, config);
+
+      if (response.status === 401) {
+        // Token expired or invalid, clear it
+        localStorage.removeItem('auth_token');
+        throw new Error('Authentication failed. Please login again.');
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -50,13 +120,17 @@ export class ApiClient {
   }
 
   // Course endpoints
-  async getCourses(searchCriteria?: Record<string, any>) {
+  async getCourses(searchCriteria?: Record<string, string | number | boolean>) {
     const filtered = Object.fromEntries(
       Object.entries(searchCriteria || {}).filter(([_, v]) => v !== undefined)
     );
 
     const query = Object.keys(filtered).length
-      ? "?" + new URLSearchParams(filtered as Record<string, string>).toString()
+      ? "?" + new URLSearchParams(
+          Object.fromEntries(
+            Object.entries(filtered).map(([k, v]) => [k, String(v)])
+          )
+        ).toString()
       : "";
 
     return this.request(`/v1/course/search${query}`, {
@@ -110,8 +184,27 @@ export class ApiClient {
     });
   }
 
+  async refreshToken(refreshToken: string) {
+    return this.request("/v1/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+  }
+
+  async logout() {
+    try {
+      await this.request("/v1/auth/sign-out", {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error("Logout API call failed:", error);
+    } finally {
+      localStorage.removeItem('auth_token');
+    }
+  }
+
   async getUserProfile() {
-    return this.request("/v1/users/-profile");
+    return this.request("/users/-profile");
   }
 
   // Comment endpoints

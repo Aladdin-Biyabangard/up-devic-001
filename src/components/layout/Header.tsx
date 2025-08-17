@@ -12,16 +12,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, BookOpen, User, Settings, LogOut, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
-  user?: any;
   onSearch?: (query: string) => void;
   onMenuToggle?: () => void;
 }
 
-export function Header({ user, onSearch, onMenuToggle }: HeaderProps) {
+export function Header({ onSearch, onMenuToggle }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +32,7 @@ export function Header({ user, onSearch, onMenuToggle }: HeaderProps) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("auth_token");
+    logout();
     navigate("/auth");
   };
 

@@ -3,18 +3,25 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { BookOpen, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login, register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,7 +29,7 @@ export default function AuthPage() {
     lastName: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    passwordConfirm: "",
   });
 
   const mode = searchParams.get("mode") || "login";
@@ -30,7 +37,7 @@ export default function AuthPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -39,24 +46,17 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const response = await api.login({
-        email: formData.email,
-        password: formData.password
+      await login(formData.email, formData.password);
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
       });
-
-      if (response && (response as any).token) {
-        localStorage.setItem("auth_token", (response as any).token);
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
-        navigate("/dashboard");
-      }
+      navigate("/");
     } catch (error) {
       toast({
         title: "Sign in failed",
         description: "Please check your credentials and try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -65,12 +65,12 @@ export default function AuthPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
+
+    if (formData.password !== formData.passwordConfirm) {
       toast({
         title: "Password mismatch",
         description: "Passwords do not match. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -78,25 +78,19 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const response = await api.register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password
-      });
+      await register(formData);
 
       toast({
         title: "Registration successful!",
-        description: "Please check your email to verify your account.",
+        description: "You have been automatically signed in.",
       });
-      
-      // Switch to login tab
-      window.history.replaceState({}, '', '/auth');
+
+      navigate("/");
     } catch (error) {
       toast({
         title: "Registration failed",
         description: "Please check your information and try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -108,7 +102,10 @@ export default function AuthPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 font-bold text-2xl">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 font-bold text-2xl"
+          >
             <BookOpen className="h-8 w-8 text-primary" />
             <span className="bg-gradient-primary bg-clip-text text-transparent">
               UpDevic
@@ -125,13 +122,12 @@ export default function AuthPage() {
               {mode === "register" ? "Create Account" : "Welcome Back"}
             </CardTitle>
             <CardDescription>
-              {mode === "register" 
+              {mode === "register"
                 ? "Sign up to start your learning journey"
-                : "Sign in to continue your progress"
-              }
+                : "Sign in to continue your progress"}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <Tabs value={mode} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
@@ -142,7 +138,7 @@ export default function AuthPage() {
                   <Link to="/auth?mode=register">Sign Up</Link>
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="login" className="space-y-4">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
@@ -157,7 +153,7 @@ export default function AuthPage() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
@@ -187,15 +183,19 @@ export default function AuthPage() {
                   </div>
 
                   <div className="text-right">
-                    <Link 
-                      to="/auth/forgot-password" 
+                    <Link
+                      to="/auth/forgot-password"
                       className="text-sm text-primary hover:underline"
                     >
                       Forgot password?
                     </Link>
                   </div>
-                  
-                  <Button type="submit" className="w-full btn-hero" disabled={loading}>
+
+                  <Button
+                    type="submit"
+                    className="w-full btn-hero"
+                    disabled={loading}
+                  >
                     {loading ? (
                       <>
                         <LoadingSpinner size="sm" className="mr-2" />
@@ -207,7 +207,7 @@ export default function AuthPage() {
                   </Button>
                 </form>
               </TabsContent>
-              
+
               <TabsContent value="register" className="space-y-4">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -234,7 +234,7 @@ export default function AuthPage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -247,7 +247,7 @@ export default function AuthPage() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
@@ -275,21 +275,25 @@ export default function AuthPage() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Label htmlFor="passwordConfirm">Confirm Password</Label>
                     <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
+                      id="passwordConfirm"
+                      name="passwordConfirm"
                       type="password"
                       placeholder="Confirm your password"
-                      value={formData.confirmPassword}
+                      value={formData.passwordConfirm}
                       onChange={handleInputChange}
                       required
                     />
                   </div>
-                  
-                  <Button type="submit" className="w-full btn-hero" disabled={loading}>
+
+                  <Button
+                    type="submit"
+                    className="w-full btn-hero"
+                    disabled={loading}
+                  >
                     {loading ? (
                       <>
                         <LoadingSpinner size="sm" className="mr-2" />
