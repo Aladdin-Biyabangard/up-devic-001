@@ -1,7 +1,5 @@
 // API Configuration and utilities for UpDevic Course Platform
-const API_BASE_URL = import.meta.env.DEV
-  ? "/api" // Use proxy in development
-  : "https://up-devic-001.onrender.com/api";
+const API_BASE_URL = "https://up-devic-001.onrender.com/api";
 
 // API client with error handling and loading states
 export class ApiClient {

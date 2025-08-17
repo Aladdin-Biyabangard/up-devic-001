@@ -8,7 +8,6 @@ import { CourseCard, CourseCardSkeleton } from "@/components/course/CourseCard";
 import { api, Course } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
-import { PageLoader } from "@/components/ui/loading-spinner";
 
 export default function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
