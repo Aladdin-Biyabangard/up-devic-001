@@ -16,7 +16,7 @@ export default function CoursesPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "");
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
   const [sortBy, setSortBy] = useState("popular");
   const [priceRange, setPriceRange] = useState("all");
   const { toast } = useToast();
@@ -42,9 +42,10 @@ export default function CoursesPage() {
     try {
       setLoading(true);
       
+      const categoryFilter = selectedCategory && selectedCategory !== "all" ? selectedCategory : undefined;
       const searchCriteria = {
         query: searchQuery || undefined,
-        category: selectedCategory || undefined,
+        category: categoryFilter,
         sortBy,
         priceRange: priceRange !== "all" ? priceRange : undefined,
         page: 0,
@@ -52,8 +53,8 @@ export default function CoursesPage() {
       };
 
       let response;
-      if (selectedCategory && !searchQuery) {
-        response = await api.getCoursesByCategory(selectedCategory);
+      if (categoryFilter && !searchQuery) {
+        response = await api.getCoursesByCategory(categoryFilter);
       } else {
         response = await api.getCourses(searchCriteria);
       }
@@ -77,19 +78,19 @@ export default function CoursesPage() {
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("search", searchQuery);
-    if (selectedCategory) params.set("category", selectedCategory);
+    if (selectedCategory && selectedCategory !== "all") params.set("category", selectedCategory);
     setSearchParams(params);
   };
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedCategory("");
+    setSelectedCategory("all");
     setSortBy("popular");
     setPriceRange("all");
     setSearchParams({});
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory || sortBy !== "popular" || priceRange !== "all";
+  const hasActiveFilters = !!(searchQuery || (selectedCategory !== "all") || sortBy !== "popular" || priceRange !== "all");
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -134,7 +135,7 @@ export default function CoursesPage() {
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
@@ -184,7 +185,7 @@ export default function CoursesPage() {
                 Search: "{searchQuery}"
               </Badge>
             )}
-            {selectedCategory && (
+            {selectedCategory !== "all" && (
               <Badge variant="secondary">
                 Category: {selectedCategory}
               </Badge>
