@@ -190,7 +190,7 @@ export default function HomePage() {
                 ))
               : popularCourses.slice(0, 8).map((course, index) => (
                   <div 
-                    key={course.id}
+                    key={course?.courseId}
                     className="animate-slide-up"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
