@@ -6,13 +6,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { api, Course, Lesson, Comment } from "@/lib/api";
+import { api, Lesson, Comment } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { Star, Clock, Users, Tag } from "lucide-react";
+import { Star, Users, Tag, BookOpen, GraduationCap, Calendar } from "lucide-react";
+
+interface CourseDetail {
+  photo_url: string | null;
+  headTeacher: string;
+  teachers: string[];
+  title: string;
+  description: string;
+  level: string;
+  createdAt: string;
+  lessonCount: number;
+  studentCount: number;
+  teacherCount: number;
+  rating: number;
+  price: number;
+}
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
-  const [course, setCourse] = useState<Course | null>(null);
+  const [course, setCourse] = useState<CourseDetail | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,15 +38,31 @@ export default function CourseDetailPage() {
     const load = async () => {
       try {
         setLoading(true);
-        const [courseRes, lessonsRes, commentsRes] = await Promise.all([
+        const [courseRes,lessonsRes,commentsRes] = await Promise.all([
           api.getCourse(courseId),
           api.getLessonsByCourse(courseId),
           api.getCourseComments(courseId)
         ]);
 
-        setCourse(courseRes as Course);
+        // Coerce/normalize response to CourseDetail shape
+        const c = courseRes as Partial<CourseDetail>;
+        setCourse({
+          photo_url: c.photo_url ?? null,
+          headTeacher: c.headTeacher ?? "",
+          teachers: Array.isArray(c.teachers) ? c.teachers : [],
+          title: c.title ?? "",
+          description: c.description ?? "",
+          level: c.level ?? "BEGINNER",
+          createdAt: c.createdAt ?? new Date().toISOString(),
+          lessonCount: typeof c.lessonCount === "number" ? c.lessonCount : Array.isArray(lessonsRes) ? lessonsRes.length : 0,
+          studentCount: c.studentCount ?? 0,
+          teacherCount: c.teacherCount ?? (Array.isArray(c.teachers) ? c.teachers.length : 0),
+          rating: typeof c.rating === "number" ? c.rating : 0,
+          price: typeof c.price === "number" ? c.price : 0,
+        });
+
         setLessons(Array.isArray(lessonsRes) ? (lessonsRes as Lesson[]) : []);
-        setComments(Array.isArray(commentsRes) ? (commentsRes as Comment[]) : []);
+        setComments(Array.isArray(commentsRes?.content) ? (commentsRes?.content as Comment[]) : []);
       } catch (error) {
         console.error("Failed to load course detail:", error);
         toast({
@@ -63,14 +94,17 @@ export default function CourseDetailPage() {
     );
   }
 
+  const createdDate = new Date(course.createdAt).toLocaleDateString();
+  const levelLabel = course.level?.toString().replace(/_/g, " ");
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div className="lg:col-span-2">
           <div className="aspect-video bg-muted overflow-hidden rounded-lg">
-            {course.imageUrl ? (
-              <img src={course.imageUrl} alt={course.title} className="w-full h-full object-cover" />
+            {course.photo_url ? (
+              <img src={course.photo_url} alt={course.title} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
                 <span className="text-primary-foreground text-4xl font-semibold">
@@ -86,11 +120,11 @@ export default function CourseDetailPage() {
               <CardTitle className="text-2xl">{course.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{course.category}</Badge>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary">{levelLabel}</Badge>
               </div>
               <div className="text-sm text-muted-foreground">
-                by <span className="font-medium text-foreground">{course.teacherName}</span>
+                by <span className="font-medium text-foreground">{course.headTeacher}</span>
               </div>
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
@@ -98,16 +132,24 @@ export default function CourseDetailPage() {
                   <span className="font-medium">{course.rating.toFixed(1)}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{course.duration}</span>
+                  <BookOpen className="h-4 w-4" />
+                  <span>{course.lessonCount} lessons</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  <span>{course.studentsCount}</span>
+                  <span>{course.studentCount} students</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <GraduationCap className="h-4 w-4" />
+                  <span>{course.teacherCount} teachers</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  <span>Created {createdDate}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Tag className="h-4 w-4" />
-                  <span>${course.price}</span>
+                  <span>${course.price.toFixed(2)}</span>
                 </div>
               </div>
               <Separator />
@@ -116,6 +158,18 @@ export default function CourseDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Teacher list */}
+      {course.teachers?.length > 0 && (
+        <div className="mb-8">
+          <div className="text-sm font-medium text-muted-foreground mb-2">Teachers</div>
+          <div className="flex flex-wrap gap-2">
+            {course.teachers.map((t, idx) => (
+              <Badge key={`${t}-${idx}`} variant="outline">{t}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
@@ -158,8 +212,7 @@ export default function CourseDetailPage() {
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span>{lesson.duration}</span>
+                          {/* Duration not available in provided data; hide if missing */}
                         </div>
                       </div>
                     ))}
@@ -190,7 +243,7 @@ export default function CourseDetailPage() {
                           </div>
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground mb-1">{new Date(c.createdAt).toLocaleDateString()}</div>
+                      <div className="text-sm text-muted-foreground mb-1">{new Date(c?.updatedAt).toLocaleDateString()}</div>
                       <div>{c.content}</div>
                     </div>
                   ))}

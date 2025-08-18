@@ -209,7 +209,7 @@ export class ApiClient {
 
   // Comment endpoints
   async getCourseComments(courseId: string) {
-    return this.request(`/v1/comments/courses/${courseId}`);
+    return this.request(`/v1/comments/courses/${courseId}?page=0&size=50`);
   }
 
   async getLessonComments(lessonId: string) {
@@ -305,6 +305,6 @@ export interface Comment {
   id: string;
   content: string;
   authorName: string;
-  createdAt: string;
+  updatedAt: string;
   rating?: number;
 }
