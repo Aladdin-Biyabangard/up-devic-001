@@ -10,6 +10,15 @@ import { api, Lesson, Comment } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Star, Users, Tag, BookOpen, GraduationCap, Calendar } from "lucide-react";
 
+interface ExtendedComment extends Comment {
+  firstName?: string;
+  updatedAt?: string;
+}
+
+interface CommentsPage {
+  content?: ExtendedComment[];
+}
+
 interface CourseDetail {
   photo_url: string | null;
   headTeacher: string;
@@ -29,7 +38,7 @@ export default function CourseDetailPage() {
   const { courseId } = useParams();
   const [course, setCourse] = useState<CourseDetail | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<ExtendedComment[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -62,7 +71,13 @@ export default function CourseDetailPage() {
         });
 
         setLessons(Array.isArray(lessonsRes) ? (lessonsRes as Lesson[]) : []);
-        setComments(Array.isArray(commentsRes?.content) ? (commentsRes?.content as Comment[]) : []);
+        const page = commentsRes as CommentsPage;
+        const list = Array.isArray(page?.content)
+          ? page.content
+          : (Array.isArray(commentsRes as unknown as ExtendedComment[])
+              ? (commentsRes as unknown as ExtendedComment[])
+              : []);
+        setComments(list);
       } catch (error) {
         console.error("Failed to load course detail:", error);
         toast({
@@ -235,7 +250,7 @@ export default function CourseDetailPage() {
                   {comments.map((c) => (
                     <div key={c.id} className="p-4 border rounded-md">
                       <div className="flex items-center justify-between mb-1">
-                        <div className="font-medium">{c.authorName}</div>
+                        <div className="font-medium">{c.firstName ?? c.authorName}</div>
                         {typeof c.rating === "number" && (
                           <div className="flex items-center gap-1 text-sm">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -243,7 +258,7 @@ export default function CourseDetailPage() {
                           </div>
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground mb-1">{new Date(c?.updatedAt).toLocaleDateString()}</div>
+                      <div className="text-sm text-muted-foreground mb-1">{new Date(c?.updatedAt ?? c.createdAt).toLocaleDateString()}</div>
                       <div>{c.content}</div>
                     </div>
                   ))}
