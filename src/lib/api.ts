@@ -212,6 +212,10 @@ export class ApiClient {
     return this.request(`/v1/comments/courses/${courseId}?page=0&size=50`);
   }
 
+  async getCourseCommentsPaged(courseId: string, page: number = 0, size: number = 10) {
+    return this.request(`/v1/comments/courses/${courseId}?page=${page}&size=${size}`);
+  }
+
   async getLessonComments(lessonId: string) {
     return this.request(`/v1/comments/lessons/${lessonId}`);
   }
