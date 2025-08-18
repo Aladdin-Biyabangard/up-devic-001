@@ -86,10 +86,14 @@ export class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 
+    const isFormData = options && options.body instanceof FormData;
+
     const config: RequestInit = {
       headers: {
-        "Content-Type": "application/json",
-        'Accept': 'application/json',
+        ...(isFormData
+          ? { 'Accept': 'application/json' }
+          : { "Content-Type": "application/json", 'Accept': 'application/json' }
+        ),
         'Access-Control-Allow-Origin': '*',
         ...this.getAuthHeaders(),
         ...options.headers,
@@ -258,6 +262,77 @@ export class ApiClient {
     return this.request("/payment", {
       method: "POST",
       body: JSON.stringify({ courseId }),
+    });
+  }
+
+  // Teacher Course Management
+  async createCourse(payload: { title: string; description: string; level: string; price: number; category: string; }) {
+    return this.request("/v1/course", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateCourse(courseId: string, payload: { title?: string; description?: string; level?: string; price?: number; category?: string; }) {
+    return this.request(`/v1/course/${courseId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async uploadCoursePhoto(courseId: string, file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    return this.request(`/v1/course/photo?courseId=${encodeURIComponent(courseId)}`, {
+      method: "PATCH",
+      body: form,
+    });
+  }
+
+  async assignTeacherToCourse(courseId: string, userId: string) {
+    return this.request(`/v1/course/${courseId}/teachers/${userId}`, {
+      method: "POST",
+    });
+  }
+
+  // Teacher Lesson Management
+  async createLesson(courseId: string, payload: { title: string; description: string; videoFile?: File | null; }) {
+    // If video file provided, use form-data
+    if (payload.videoFile) {
+      const form = new FormData();
+      form.append("title", payload.title);
+      form.append("description", payload.description);
+      form.append("video", payload.videoFile);
+      return this.request(`/v1/lessons/courses/${courseId}`, {
+        method: "POST",
+        body: form,
+      });
+    }
+    return this.request(`/v1/lessons/courses/${courseId}`, {
+      method: "POST",
+      body: JSON.stringify({ title: payload.title, description: payload.description }),
+    });
+  }
+
+  async updateLesson(lessonId: string, payload: { title?: string; description?: string; duration?: string; videoUrl?: string; }) {
+    return this.request(`/v1/lessons/${lessonId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async uploadLessonPhoto(lessonId: string, file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    return this.request(`/v1/lessons/${lessonId}/photo`, {
+      method: "PATCH",
+      body: form,
+    });
+  }
+
+  async deleteLesson(lessonId: string) {
+    return this.request(`/v1/lessons/${lessonId}`, {
+      method: "DELETE",
     });
   }
 

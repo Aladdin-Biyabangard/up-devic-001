@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,9 @@ import {
   FileText,
   Download
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface Lesson {
   id: number;
@@ -40,6 +43,7 @@ interface Course {
 }
 
 export function LessonManagement() {
+  const { toast } = useToast();
   const [lessons, setLessons] = useState<Lesson[]>([
     {
       id: 1,
@@ -78,11 +82,12 @@ export function LessonManagement() {
     }
   ]);
 
-  const [courses] = useState<Course[]>([
-    { id: 1, title: "React Fundamentals" },
-    { id: 2, title: "JavaScript Advanced" },
-    { id: 3, title: "Node.js Backend" }
-  ]);
+  const courseListQuery = useQuery({
+    queryKey: ["teacher-courses-simple"],
+    queryFn: async (): Promise<any[]> => (await api.getTeacherCourses()) as any[],
+    staleTime: 60_000,
+  });
+  const courseList = courseListQuery.data as any[] | undefined;
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
@@ -94,6 +99,7 @@ export function LessonManagement() {
     videoFile: null as File | null,
     materials: [] as File[]
   });
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
 
   const groupedLessons = lessons.reduce((groups, lesson) => {
     const courseName = lesson.courseName;
@@ -104,42 +110,50 @@ export function LessonManagement() {
     return groups;
   }, {} as Record<string, Lesson[]>);
 
-  const handleCreateLesson = () => {
-    const selectedCourse = courses.find(c => c.id === parseInt(newLesson.courseId));
-    if (!selectedCourse) return;
-
-    const lesson: Lesson = {
-      id: Date.now(),
-      title: newLesson.title,
-      description: newLesson.description,
-      duration: newLesson.duration,
-      courseId: parseInt(newLesson.courseId),
-      courseName: selectedCourse.title,
-      order: lessons.filter(l => l.courseId === parseInt(newLesson.courseId)).length + 1,
-      materials: newLesson.materials.map(f => f.name),
-      isPublished: false
-    };
-
-    setLessons([...lessons, lesson]);
-    setNewLesson({ title: "", description: "", duration: "", courseId: "", videoFile: null, materials: [] });
-    setIsCreateModalOpen(false);
+  const handleCreateLesson = async () => {
+    try {
+      const selected = (courseList || []).find((c: any) => String(c.courseId) === newLesson.courseId);
+      if (!selected) return;
+      await api.createLesson(String(selected.courseId), {
+        title: newLesson.title,
+        description: newLesson.description,
+        videoFile: newLesson.videoFile,
+      });
+      toast({ title: "Lesson created" });
+      setNewLesson({ title: "", description: "", duration: "", courseId: "", videoFile: null, materials: [] });
+      setIsCreateModalOpen(false);
+    } catch (e: any) {
+      toast({ title: "Failed to create lesson", description: e?.message, variant: "destructive" as any });
+    }
   };
 
-  const handleDeleteLesson = (id: number) => {
-    setLessons(lessons.filter(lesson => lesson.id !== id));
+  const handleDeleteLesson = async (id: number) => {
+    try {
+      await api.deleteLesson(String(id));
+      toast({ title: "Lesson deleted" });
+      setLessons(lessons.filter(lesson => lesson.id !== id));
+    } catch (e: any) {
+      toast({ title: "Failed to delete", description: e?.message, variant: "destructive" as any });
+    }
   };
 
   const handleEditLesson = (lesson: Lesson) => {
     setEditingLesson(lesson);
   };
 
-  const handleUpdateLesson = () => {
+  const handleUpdateLesson = async () => {
     if (!editingLesson) return;
-    
-    setLessons(lessons.map(lesson => 
-      lesson.id === editingLesson.id ? editingLesson : lesson
-    ));
-    setEditingLesson(null);
+    try {
+      await api.updateLesson(String(editingLesson.id), {
+        title: editingLesson.title,
+        description: editingLesson.description,
+        duration: editingLesson.duration,
+      });
+      toast({ title: "Lesson updated" });
+      setEditingLesson(null);
+    } catch (e: any) {
+      toast({ title: "Failed to update", description: e?.message, variant: "destructive" as any });
+    }
   };
 
   const togglePublishStatus = (lessonId: number) => {
@@ -180,8 +194,8 @@ export function LessonManagement() {
                     <SelectValue placeholder="Select a course" />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.map(course => (
-                      <SelectItem key={course.id} value={course.id.toString()}>
+                    {(courseList || []).map((course: any) => (
+                      <SelectItem key={course.courseId} value={String(course.courseId)}>
                         {course.title}
                       </SelectItem>
                     ))}
@@ -218,14 +232,23 @@ export function LessonManagement() {
               </div>
               <div className="space-y-2">
                 <Label>Video Upload</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const f = e.dataTransfer.files?.[0];
+                    if (f) setNewLesson({ ...newLesson, videoFile: f });
+                  }}
+                >
                   <FileVideo className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <Button variant="outline" size="sm">
+                  <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={(e) => setNewLesson({ ...newLesson, videoFile: e.target.files?.[0] || null })} />
+                  <Button variant="outline" size="sm" onClick={() => videoInputRef.current?.click()}>
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Video
                   </Button>
                   <p className="text-sm text-muted-foreground mt-2">
-                    MP4, MOV up to 500MB
+                    MP4, MOV up to 500MB {newLesson.videoFile ? `• Selected: ${newLesson.videoFile.name}` : ""}
                   </p>
                 </div>
               </div>

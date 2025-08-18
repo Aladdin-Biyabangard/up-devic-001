@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,118 +7,121 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Plus, 
   Edit, 
-  Trash2, 
   Eye, 
   Users, 
   DollarSign,
   Upload,
   Image as ImageIcon
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
-interface Course {
-  id: number;
+type Course = {
+  courseId: string;
   title: string;
   description: string;
   price: number;
   category: string;
-  students: number;
-  status: 'published' | 'draft';
-  createdAt: string;
-}
+  students?: number;
+  status?: 'published' | 'draft';
+  createdAt?: string;
+  level?: string;
+  photo_url?: string;
+};
 
 export function CourseManagement() {
-  const [courses, setCourses] = useState<Course[]>([
-    {
-      id: 1,
-      title: "React Fundamentals",
-      description: "Learn the basics of React development",
-      price: 99,
-      category: "Web Development",
-      students: 234,
-      status: 'published',
-      createdAt: "2024-01-15"
-    },
-    {
-      id: 2,
-      title: "JavaScript Advanced",
-      description: "Advanced JavaScript concepts and patterns",
-      price: 149,
-      category: "Programming",
-      students: 156,
-      status: 'published',
-      createdAt: "2024-02-01"
-    },
-    {
-      id: 3,
-      title: "Node.js Backend",
-      description: "Build robust backend applications",
-      price: 199,
-      category: "Backend",
-      students: 89,
-      status: 'draft',
-      createdAt: "2024-02-15"
-    }
-  ]);
+  const { toast } = useToast();
+  const [courses, setCourses] = useState<Course[]>([]);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [newCourse, setNewCourse] = useState({
     title: "",
     description: "",
+    level: "BEGINNER" as string,
     price: "",
     category: "",
     image: null as File | null
   });
+  const [assignDialog, setAssignDialog] = useState<{ open: boolean; courseId?: string; userId: string }>({ open: false, userId: "" });
 
-  const categories = [
-    "Web Development",
-    "Mobile Development", 
-    "Data Science",
-    "Programming",
-    "Backend",
-    "Frontend",
-    "DevOps",
-    "Design"
-  ];
+  const { data: categories, isLoading: isCategoriesLoading } = useQuery<string[]>({
+    queryKey: ["categories"],
+    queryFn: () => api.getCategories(),
+    staleTime: 5 * 60_000,
+  });
 
-  const handleCreateCourse = () => {
-    // Validation would go here
-    const course: Course = {
-      id: Date.now(),
-      title: newCourse.title,
-      description: newCourse.description,
-      price: parseFloat(newCourse.price),
-      category: newCourse.category,
-      students: 0,
-      status: 'draft',
-      createdAt: new Date().toISOString().split('T')[0]
-    };
+  const { isLoading: isCoursesLoading, refetch: refetchCourses } = useQuery<Course[]>({
+    queryKey: ["teacher-courses"],
+    queryFn: () => api.getTeacherCourses(),
+    onSuccess: (data) => setCourses(data as unknown as Course[]),
+    staleTime: 30_000,
+  });
 
-    setCourses([...courses, course]);
-    setNewCourse({ title: "", description: "", price: "", category: "", image: null });
-    setIsCreateModalOpen(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleCreateCourse = async () => {
+    try {
+      const created = await api.createCourse({
+        title: newCourse.title,
+        description: newCourse.description,
+        level: newCourse.level,
+        price: parseFloat(newCourse.price || "0"),
+        category: newCourse.category,
+      });
+      if (newCourse.image) {
+        await api.uploadCoursePhoto(created.courseId ?? created.id ?? created?.course?.courseId ?? created, newCourse.image);
+      }
+      toast({ title: "Course created" });
+      setIsCreateModalOpen(false);
+      setNewCourse({ title: "", description: "", price: "", category: "", image: null, level: "BEGINNER" });
+      await refetchCourses();
+    } catch (e: any) {
+      toast({ title: "Failed to create course", description: e?.message, variant: "destructive" as any });
+    }
   };
 
-  const handleDeleteCourse = (id: number) => {
-    setCourses(courses.filter(course => course.id !== id));
+  const handleUploadCoursePhoto = async (courseId: string, file: File) => {
+    try {
+      await api.uploadCoursePhoto(courseId, file);
+      toast({ title: "Photo updated" });
+      await refetchCourses();
+    } catch (e: any) {
+      toast({ title: "Failed to upload photo", description: e?.message, variant: "destructive" as any });
+    }
   };
 
   const handleEditCourse = (course: Course) => {
     setEditingCourse(course);
   };
 
-  const handleUpdateCourse = () => {
+  const handleUpdateCourse = async () => {
     if (!editingCourse) return;
-    
-    setCourses(courses.map(course => 
-      course.id === editingCourse.id ? editingCourse : course
-    ));
-    setEditingCourse(null);
+    try {
+      await api.updateCourse(editingCourse.courseId, {
+        title: editingCourse.title,
+        description: editingCourse.description,
+        price: editingCourse.price,
+        category: editingCourse.category,
+        level: editingCourse.level,
+      });
+      toast({ title: "Course updated" });
+      setEditingCourse(null);
+      await refetchCourses();
+    } catch (e: any) {
+      toast({ title: "Failed to update course", description: e?.message, variant: "destructive" as any });
+    }
+  };
+
+  const onDropCourseImage = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) setNewCourse({ ...newCourse, image: file });
   };
 
   return (
@@ -165,6 +168,19 @@ export function CourseManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="level">Level</Label>
+                  <Select value={newCourse.level} onValueChange={(v) => setNewCourse({ ...newCourse, level: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['BEGINNER','INTERMEDIATE','ADVANCED'].map((lvl) => (
+                        <SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="price">Price ($)</Label>
                   <Input
                     id="price"
@@ -174,14 +190,16 @@ export function CourseManagement() {
                     placeholder="99"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  <Select onValueChange={(value) => setNewCourse({...newCourse, category: value})}>
+                  <Select value={newCourse.category} onValueChange={(value) => setNewCourse({...newCourse, category: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map(category => (
+                      {(categories || []).map(category => (
                         <SelectItem key={category} value={category}>
                           {category}
                         </SelectItem>
@@ -192,14 +210,19 @@ export function CourseManagement() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="image">Course Image</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <div
+                  className="border-2 border-dashed border-border rounded-lg p-6 text-center"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={onDropCourseImage}
+                >
                   <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <Button variant="outline" size="sm">
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setNewCourse({ ...newCourse, image: e.target.files?.[0] || null })} />
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Image
                   </Button>
                   <p className="text-sm text-muted-foreground mt-2">
-                    JPG, PNG up to 5MB
+                    JPG, PNG up to 5MB {newCourse.image ? `• Selected: ${newCourse.image.name}` : ""}
                   </p>
                 </div>
               </div>
@@ -208,7 +231,7 @@ export function CourseManagement() {
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateCourse}>
+              <Button onClick={handleCreateCourse} disabled={isCategoriesLoading}>
                 Create Course
               </Button>
             </div>
@@ -229,17 +252,15 @@ export function CourseManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Course</TableHead>
+                <TableHead>Level</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead>Students</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {courses.map((course) => (
-                <TableRow key={course.id}>
+                <TableRow key={course.courseId}>
                   <TableCell>
                     <div>
                       <div className="font-medium">{course.title}</div>
@@ -248,25 +269,11 @@ export function CourseManagement() {
                       </div>
                     </div>
                   </TableCell>
+                  <TableCell>{course.level}</TableCell>
                   <TableCell>{course.category}</TableCell>
                   <TableCell>${course.price}</TableCell>
                   <TableCell>
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-1" />
-                      {course.students}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={course.status === 'published' ? 'default' : 'secondary'}>
-                      {course.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{course.createdAt}</TableCell>
-                  <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
                       <Button 
                         variant="ghost" 
                         size="sm"
@@ -274,30 +281,38 @@ export function CourseManagement() {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Course</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{course.title}"? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDeleteCourse(course.id)}
-                              className="bg-destructive hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <input id={`upload-${course.courseId}`} type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleUploadCoursePhoto(course.courseId, e.target.files![0])} />
+                      <Button variant="ghost" size="sm" onClick={() => document.getElementById(`upload-${course.courseId}`)?.click()}>
+                        <Upload className="h-4 w-4" />
+                      </Button>
+                      <Dialog open={assignDialog.open && assignDialog.courseId === course.courseId} onOpenChange={(o) => setAssignDialog((s) => ({ ...s, open: o, courseId: o ? course.courseId : undefined }))}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">Assign Teacher</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Assign Teacher to {course.title}</DialogTitle>
+                            <DialogDescription>Enter the User ID of the teacher to assign</DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-2">
+                            <Label htmlFor="teacher-id">User ID</Label>
+                            <Input id="teacher-id" value={assignDialog.userId} onChange={(e) => setAssignDialog((s) => ({ ...s, userId: e.target.value }))} placeholder="teacher user id" />
+                          </div>
+                          <div className="flex justify-end gap-2 pt-4">
+                            <Button variant="outline" onClick={() => setAssignDialog({ open: false, userId: "" })}>Cancel</Button>
+                            <Button onClick={async () => {
+                              try {
+                                if (!assignDialog.userId) return;
+                                await api.assignTeacherToCourse(course.courseId, assignDialog.userId);
+                                toast({ title: "Teacher assigned" });
+                                setAssignDialog({ open: false, userId: "" });
+                              } catch (e: any) {
+                                toast({ title: "Failed to assign", description: e?.message, variant: "destructive" as any });
+                              }
+                            }}>Assign</Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -337,6 +352,19 @@ export function CourseManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="edit-level">Level</Label>
+                  <Select value={editingCourse.level} onValueChange={(v) => setEditingCourse({ ...editingCourse, level: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['BEGINNER','INTERMEDIATE','ADVANCED'].map((lvl) => (
+                        <SelectItem key={lvl} value={lvl}>{lvl}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="edit-price">Price ($)</Label>
                   <Input
                     id="edit-price"
@@ -355,7 +383,7 @@ export function CourseManagement() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map(category => (
+                      {(categories || []).map(category => (
                         <SelectItem key={category} value={category}>
                           {category}
                         </SelectItem>

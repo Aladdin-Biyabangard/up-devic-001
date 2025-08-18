@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, BookOpen, User, Settings, LogOut, Menu } from "lucide-react";
+import { Search, BookOpen, User, Settings, LogOut, Menu, PanelsTopLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -75,6 +75,14 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
 
         {/* User Actions */}
         <div className="flex items-center gap-4">
+          {user?.role === 'TEACHER' && (
+            <Button variant="secondary" className="hidden md:flex" asChild>
+              <Link to="/teacher-panel" className="gap-2">
+                <PanelsTopLeft className="h-4 w-4" />
+                Teacher Panel
+              </Link>
+            </Button>
+          )}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -97,6 +105,14 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
+                {user?.role === 'TEACHER' && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/teacher-panel" className="cursor-pointer">
+                      <PanelsTopLeft className="mr-2 h-4 w-4" />
+                      Teacher Panel
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
