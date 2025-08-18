@@ -160,6 +160,31 @@ export class ApiClient {
     );
   }
 
+  // Wishlist endpoints
+  async getWishlist(page: number = 0, size: number = 12) {
+    return this.request(`/v1/course/wish?page=${page}&size=${size}`, {
+      method: "GET",
+    });
+  }
+
+  async addCourseToWishlist(courseId: string) {
+    return this.request(`/v1/course/${courseId}/wish`, {
+      method: "POST",
+    });
+  }
+
+  async removeCourseFromWishlist(courseId: string) {
+    return this.request(`/v1/course/${courseId}/wish`, {
+      method: "DELETE",
+    });
+  }
+
+  async rateCourse(courseId: string, rating: number) {
+    return this.request(`/v1/course/${courseId}/rating?rating=${encodeURIComponent(String(rating))}`, {
+      method: "PATCH",
+    });
+  }
+
   // Lesson endpoints
   async getLessonsByCourse(courseId: string) {
     return this.request(`/v1/lessons/courses/${courseId}`);
