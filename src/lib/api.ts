@@ -211,6 +211,29 @@ export class ApiClient {
     return this.request("/users/-profile");
   }
 
+  async updateUserProfile(profile: { bio?: string; socialLink?: string[]; skill?: string[] }) {
+    return this.request("/users/profile", {
+      method: "PUT",
+      body: JSON.stringify(profile),
+    });
+  }
+
+  async changeUserPassword(payload: { currentPassword: string; newPassword: string; retryPassword: string }) {
+    return this.request("/users/password", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async uploadUserPhoto(file: File) {
+    const form = new FormData();
+    form.append("multipartFile", file);
+    return this.request("/users/-photo", {
+      method: "PATCH",
+      body: form,
+    });
+  }
+
   // Comment endpoints
   async getCourseComments(courseId: string) {
     return this.request(`/v1/comments/courses/${courseId}?page=0&size=50`);
@@ -254,7 +277,7 @@ export class ApiClient {
   }
 
   async requestToBecomeTeacher() {
-    return this.request("/students/for-teacher");
+    return this.request("/v1/students/for-teacher");
   }
 
   // Payment endpoints
