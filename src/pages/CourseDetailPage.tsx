@@ -12,7 +12,6 @@ import { Star, Users, Tag, BookOpen, GraduationCap, Calendar } from "lucide-reac
 
 interface ExtendedComment extends Comment {
   firstName?: string;
-  updatedAt?: string;
 }
 
 interface CommentsPage {
@@ -258,7 +257,7 @@ export default function CourseDetailPage() {
                           </div>
                         )}
                       </div>
-                      <div className="text-sm text-muted-foreground mb-1">{new Date(c?.updatedAt ?? c.createdAt).toLocaleDateString()}</div>
+                      <div className="text-sm text-muted-foreground mb-1">{new Date(c.updatedAt).toLocaleDateString()}</div>
                       <div>{c.content}</div>
                     </div>
                   ))}
