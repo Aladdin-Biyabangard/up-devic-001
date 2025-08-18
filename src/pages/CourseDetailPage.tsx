@@ -33,6 +33,15 @@ type LessonItem = {
   description: string;
 };
 
+type LessonDetail = {
+  lessonId: string;
+  photoUrl?: string;
+  title: string;
+  description: string;
+  videoUrl?: string;
+  duration?: string;
+};
+
 type PagedCommentsResponse = {
   content: Array<{
     commentId: string;
@@ -74,6 +83,8 @@ const CourseDetailPage = () => {
   const [wishlist, setWishlist] = useState(false);
   const [commentsPage, setCommentsPage] = useState(0);
   const commentsPageSize = 10;
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
 
   // Course details
   const {
@@ -117,6 +128,20 @@ const CourseDetailPage = () => {
 
   const comments = commentsResponse?.content ?? [];
   const canGoNext = comments.length === commentsPageSize; // optimistic pagination
+
+  // Selected lesson details
+  const {
+    data: lessonDetail,
+    isLoading: isLessonDetailLoading,
+    isError: isLessonDetailError,
+    error: lessonDetailError,
+    refetch: refetchLessonDetail,
+  } = useQuery<LessonDetail>({
+    queryKey: ["lesson-detail", selectedLessonId],
+    queryFn: () => api.getLesson(selectedLessonId!),
+    enabled: !!selectedLessonId && lessonDialogOpen,
+    staleTime: 60_000,
+  });
 
   const handleShare = async () => {
     try {
@@ -291,38 +316,57 @@ const CourseDetailPage = () => {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {(lessons || []).map((lesson) => (
-                      <Dialog key={lesson.lessonId}>
-                        <DialogTrigger asChild>
-                          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-                            {lesson.photoUrl ? (
-                              <img src={lesson.photoUrl} alt={lesson.title} className="w-full h-36 object-cover rounded-t-lg" />
-                            ) : (
-                              <div className="w-full h-36 bg-accent rounded-t-lg" />
-                            )}
-                            <div className="p-4">
-                              <div className="font-semibold line-clamp-1">{lesson.title}</div>
-                              <div className="text-sm text-muted-foreground line-clamp-2">{lesson.description}</div>
-                            </div>
-                          </Card>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{lesson.title}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-3">
-                            {lesson.photoUrl && (
-                              <img src={lesson.photoUrl} alt={lesson.title} className="w-full h-48 object-cover rounded-md" />
-                            )}
-                            <p className="text-muted-foreground">{lesson.description}</p>
-                            <p className="text-sm text-muted-foreground">More details coming soon.</p>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                      <Card
+                        key={lesson.lessonId}
+                        className="hover:shadow-lg transition-shadow cursor-pointer"
+                        onClick={() => {
+                          setSelectedLessonId(lesson.lessonId);
+                          setLessonDialogOpen(true);
+                        }}
+                      >
+                        {lesson.photoUrl ? (
+                          <img src={lesson.photoUrl} alt={lesson.title} className="w-full h-36 object-cover rounded-t-lg" />
+                        ) : (
+                          <div className="w-full h-36 bg-accent rounded-t-lg" />
+                        )}
+                        <div className="p-4">
+                          <div className="font-semibold line-clamp-1">{lesson.title}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-2">{lesson.description}</div>
+                        </div>
+                      </Card>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {/* Lesson Detail Modal */}
+            <Dialog open={lessonDialogOpen} onOpenChange={(o) => setLessonDialogOpen(o)}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{lessonDetail?.title || "Lesson Details"}</DialogTitle>
+                </DialogHeader>
+                {isLessonDetailLoading ? (
+                  <div className="flex items-center justify-center p-8"><LoadingSpinner size="lg" /></div>
+                ) : isLessonDetailError ? (
+                  <div className="text-sm text-destructive">{(lessonDetailError as any)?.message || "Failed to load lesson details."}</div>
+                ) : lessonDetail ? (
+                  <div className="space-y-4">
+                    {lessonDetail.videoUrl ? (
+                      <video
+                        src={lessonDetail.videoUrl}
+                        controls
+                        className="w-full h-56 rounded-md bg-black"
+                      />
+                    ) : lessonDetail.photoUrl ? (
+                      <img src={lessonDetail.photoUrl} alt={lessonDetail.title} className="w-full h-56 object-cover rounded-md" />
+                    ) : null}
+                    <div className="text-sm text-muted-foreground">Duration: {lessonDetail.duration || "N/A"}</div>
+                    <p className="text-foreground leading-7">{lessonDetail.description}</p>
+                  </div>
+                ) : null}
+              </DialogContent>
+            </Dialog>
 
             {/* Comments */}
             <Card className="shadow-md">
