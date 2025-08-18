@@ -266,8 +266,9 @@ export class ApiClient {
   }
 
   // Teacher Course Management
-  async createCourse(payload: { title: string; description: string; level: string; price: number; category: string; }) {
-    return this.request("/v1/course", {
+  async createCourse(payload: { title: string; description: string; level: string; price: number; }, category: string) {
+    const query = `?courseCategoryType=${encodeURIComponent(category)}`;
+    return this.request(`/v1/course${query}`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -282,7 +283,7 @@ export class ApiClient {
 
   async uploadCoursePhoto(courseId: string, file: File) {
     const form = new FormData();
-    form.append("file", file);
+    form.append("multipartFile", file);
     return this.request(`/v1/course/photo?courseId=${encodeURIComponent(courseId)}`, {
       method: "PATCH",
       body: form,
@@ -297,24 +298,18 @@ export class ApiClient {
 
   // Teacher Lesson Management
   async createLesson(courseId: string, payload: { title: string; description: string; videoFile?: File | null; }) {
-    // If video file provided, use form-data
+    const query = `?title=${encodeURIComponent(payload.title)}&description=${encodeURIComponent(payload.description)}`;
+    const form = new FormData();
     if (payload.videoFile) {
-      const form = new FormData();
-      form.append("title", payload.title);
-      form.append("description", payload.description);
-      form.append("video", payload.videoFile);
-      return this.request(`/v1/lessons/courses/${courseId}`, {
-        method: "POST",
-        body: form,
-      });
+      form.append("file", payload.videoFile);
     }
-    return this.request(`/v1/lessons/courses/${courseId}`, {
+    return this.request(`/v1/lessons/courses/${courseId}${query}`, {
       method: "POST",
-      body: JSON.stringify({ title: payload.title, description: payload.description }),
+      body: form,
     });
   }
 
-  async updateLesson(lessonId: string, payload: { title?: string; description?: string; duration?: string; videoUrl?: string; }) {
+  async updateLesson(lessonId: string, payload: { title?: string; description?: string; }) {
     return this.request(`/v1/lessons/${lessonId}`, {
       method: "PUT",
       body: JSON.stringify(payload),
@@ -323,7 +318,7 @@ export class ApiClient {
 
   async uploadLessonPhoto(lessonId: string, file: File) {
     const form = new FormData();
-    form.append("file", file);
+    form.append("multipartFile", file);
     return this.request(`/v1/lessons/${lessonId}/photo`, {
       method: "PATCH",
       body: form,

@@ -50,7 +50,8 @@ export function CourseManagement() {
   });
   const [assignDialog, setAssignDialog] = useState<{ open: boolean; courseId?: string; userId: string }>({ open: false, userId: "" });
 
-  const { data: categories, isLoading: isCategoriesLoading } = useQuery<string[]>({
+  type CategoryDto = { category: string; courseCount: number };
+  const { data: categories, isLoading: isCategoriesLoading } = useQuery<CategoryDto[]>({
     queryKey: ["categories"],
     queryFn: () => api.getCategories(),
     staleTime: 5 * 60_000,
@@ -72,8 +73,7 @@ export function CourseManagement() {
         description: newCourse.description,
         level: newCourse.level,
         price: parseFloat(newCourse.price || "0"),
-        category: newCourse.category,
-      });
+      }, newCourse.category);
       if (newCourse.image) {
         await api.uploadCoursePhoto(created.courseId ?? created.id ?? created?.course?.courseId ?? created, newCourse.image);
       }
@@ -199,9 +199,9 @@ export function CourseManagement() {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {(categories || []).map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {(categories || []).map(c => (
+                        <SelectItem key={c.category} value={c.category}>
+                          {c.category}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -383,9 +383,9 @@ export function CourseManagement() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(categories || []).map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {(categories || []).map(c => (
+                        <SelectItem key={c.category} value={c.category}>
+                          {c.category}
                         </SelectItem>
                       ))}
                     </SelectContent>

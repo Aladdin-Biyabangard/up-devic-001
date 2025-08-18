@@ -147,7 +147,6 @@ export function LessonManagement() {
       await api.updateLesson(String(editingLesson.id), {
         title: editingLesson.title,
         description: editingLesson.description,
-        duration: editingLesson.duration,
       });
       toast({ title: "Lesson updated" });
       setEditingLesson(null);
