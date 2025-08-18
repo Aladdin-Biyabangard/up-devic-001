@@ -220,6 +220,10 @@ export class ApiClient {
     return this.request(`/v1/comments/lessons/${lessonId}`);
   }
 
+  async getLessonCommentsPaged(lessonId: string, page: number = 0, size: number = 10) {
+    return this.request(`/v1/comments/lessons/${lessonId}?page=${page}&size=${size}`);
+  }
+
   async addCommentToCourse(courseId: string, comment: string) {
     return this.request(`/v1/comments/courses${courseId}`, {
       method: "POST",
