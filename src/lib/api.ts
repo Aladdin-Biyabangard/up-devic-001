@@ -300,8 +300,18 @@ export class ApiClient {
   }
 
   // Student endpoints
-  async getStudentCourses() {
-    return this.request("/students/courses");
+  async getStudentCourses(): Promise<any> {
+    return this.request("/v1/students/courses");
+  }
+
+  async getStudentCourseDetails(courseId: string): Promise<any> {
+    const query = `?courseId=${encodeURIComponent(courseId)}`;
+    return this.request(`/v1/students${query}`);
+  }
+
+  async unenrollFromCourse(courseId: string): Promise<void> {
+    const query = `?courseId=${encodeURIComponent(courseId)}`;
+    await this.request(`/v1/students/unenroll${query}`, { method: "DELETE" });
   }
 
   async requestToBecomeTeacher() {
