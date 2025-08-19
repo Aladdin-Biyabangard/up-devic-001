@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { CourseCard, CourseCardSkeleton } from "@/components/course/CourseCard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { api, Course } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -24,10 +25,53 @@ export default function HomePage() {
   const roles: string[] = Array.isArray(user?.role)
     ? (user?.role as string[])
     : ((user as any)?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+  const isLoggedIn = !!user;
+  const isStudent = roles.includes('STUDENT');
+  const isTeacher = roles.includes('TEACHER');
+  const isAdmin = roles.includes('ADMIN');
+
+  const [studentCourses, setStudentCourses] = useState<any[]>([]);
+  const [upcomingLessons, setUpcomingLessons] = useState<Array<{ title: string; lessonId?: string; courseTitle?: string }>>([]);
+  const [studentLoading, setStudentLoading] = useState<boolean>(false);
 
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    const loadStudentData = async () => {
+      if (!isStudent) return;
+      try {
+        setStudentLoading(true);
+        const sc = await api.getStudentCourses();
+        const list = Array.isArray(sc) ? sc : (sc?.content ?? []);
+        setStudentCourses(list);
+        const top = list.slice(0, 2);
+        const lessonsArrays = await Promise.all(
+          top.map(async (c: any) => {
+            try {
+              const lessons = await api.getLessonsByCourse(c.courseId);
+              return (Array.isArray(lessons) ? lessons : []).map((l: any) => ({
+                title: l.title,
+                lessonId: l.lessonId || l.id,
+                courseTitle: c.title,
+              }));
+            } catch {
+              return [] as any[];
+            }
+          })
+        );
+        const flat = lessonsArrays.flat().slice(0, 5);
+        setUpcomingLessons(flat);
+      } catch (error: any) {
+        console.error(error);
+        toast({ title: "Error", description: "Failed to load student data.", variant: "destructive" });
+      } finally {
+        setStudentLoading(false);
+      }
+    };
+    if (isStudent) loadStudentData();
+  }, [isStudent, toast]);
 
   const loadInitialData = async () => {
     try {
@@ -144,6 +188,58 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Dashboard Summary (Authenticated) */}
+      {isLoggedIn && (
+        <section className="py-12 px-4 bg-muted/30">
+          <div className="container mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <CardTitle>Your Roles</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {roles.map((r) => (
+                      <Badge key={r} variant={r === 'ADMIN' ? 'destructive' : r === 'TEACHER' ? 'default' : 'secondary'}>
+                        {r}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <CardTitle>Enrolled Courses</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isStudent ? (
+                    <div className="text-3xl font-bold">{studentCourses.length}</div>
+                  ) : (
+                    <p className="text-muted-foreground">Only for students</p>
+                  )}
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <CardTitle>Quick Links</CardTitle>
+                </CardHeader>
+                <CardContent className="flex gap-2 flex-wrap">
+                  {isStudent && (
+                    <Button size="sm" variant="outline" onClick={() => navigate('/student')}>Student Panel</Button>
+                  )}
+                  {isTeacher && (
+                    <Button size="sm" variant="outline" onClick={() => navigate('/teacher')}>Teacher Panel</Button>
+                  )}
+                  {isAdmin && (
+                    <Button size="sm" variant="outline" onClick={() => navigate('/admin')}>Admin Panel</Button>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Stats Section */}
       <section className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto">
@@ -163,6 +259,36 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Upcoming Lessons (Student) */}
+      {isStudent && (
+        <section className="py-16 px-4">
+          <div className="container mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold">Upcoming Lessons</h2>
+              <Button variant="outline" onClick={() => navigate('/student')}>Go to Student Panel</Button>
+            </div>
+            {studentLoading ? (
+              <div className="flex items-center justify-center py-10"><LoadingSpinner /></div>
+            ) : upcomingLessons.length === 0 ? (
+              <p className="text-muted-foreground">No upcoming lessons found. Start or continue a course!</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {upcomingLessons.map((l, idx) => (
+                  <Card key={`${l.lessonId}-${idx}`} className="shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg">{l.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm text-muted-foreground">
+                      {l.courseTitle && <div>Course: <span className="text-foreground font-medium">{l.courseTitle}</span></div>}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Categories Section */}
       <section className="py-16 px-4">
@@ -204,12 +330,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Popular Courses Section */}
+      {/* Featured Courses Section */}
       <section className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto">
           <div className="flex items-center justify-between mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Popular Courses</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured Courses</h2>
               <p className="text-muted-foreground text-lg">
                 Join thousands of learners in our most popular courses
               </p>
@@ -237,6 +363,34 @@ export default function HomePage() {
                   </div>
                 ))
             }
+          </div>
+        </div>
+      </section>
+
+      {/* Recommended Courses Section */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto">
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Recommended For You</h2>
+              <p className="text-muted-foreground text-lg">Courses you might enjoy based on what’s trending</p>
+            </div>
+            <Button variant="outline" asChild>
+              <Link to="/courses">
+                Browse Courses
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {(loading ? [] : popularCourses.slice(2, 10)).map((course, index) => (
+              <div key={course?.courseId || index} className="animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                <CourseCard course={course} />
+              </div>
+            ))}
+            {loading && Array.from({ length: 8 }).map((_, i) => (
+              <CourseCardSkeleton key={i} />
+            ))}
           </div>
         </div>
       </section>
