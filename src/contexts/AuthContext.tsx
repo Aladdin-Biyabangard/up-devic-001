@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Fetch user profile after successful login and enrich with roles
         const userProfile = await api.getUserProfile() as User;
         const roles = rolesFromLoginOrToken || deriveRolesFromAnywhere(undefined, response, userProfile);
-        setUser({ ...userProfile, roles });
+        setUser({ ...userProfile, roles: roles as ("STUDENT" | "TEACHER" | "ADMIN")[] });
       } else {
         throw new Error('Invalid response from login API');
       }
