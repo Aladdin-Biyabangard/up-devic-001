@@ -6,6 +6,8 @@ import { CourseCard, CourseCardSkeleton } from "@/components/course/CourseCard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, Course } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Search, TrendingUp, BookOpen, Users, GraduationCap, ArrowRight } from "lucide-react";
 import heroImage from "@/assets/hero-education.jpg";
@@ -16,6 +18,12 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const roles: string[] = (user as any)?.roles || (user?.role ? [user.role] : JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+  const hasStudentOnly = roles.length > 0 && roles.every((r) => r === 'STUDENT');
+  const hasStudentAndTeacher = roles.includes('STUDENT') && roles.includes('TEACHER') && roles.every((r) => r === 'STUDENT' || r === 'TEACHER');
 
   useEffect(() => {
     loadInitialData();
@@ -101,6 +109,15 @@ export default function HomePage() {
             <Button size="lg" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
               <Link to="/auth?mode=register">Get Started Free</Link>
             </Button>
+            {(hasStudentOnly || hasStudentAndTeacher) && (
+              <Button
+                size="lg"
+                onClick={() => navigate('/student')}
+                className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400 rounded-full px-6"
+              >
+                Student Panel
+              </Button>
+            )}
           </div>
         </div>
       </section>

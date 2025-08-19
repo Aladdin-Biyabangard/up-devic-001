@@ -8,7 +8,7 @@ interface JWTPayload {
   email: string;
   // Some backends provide a single role, others provide an array
   role?: string;
-  roles?: Array<"STUDENT" | "TEACHER" | "ADMIN" | string>;
+  roles?: Array<"USER" | "STUDENT" | "TEACHER" | "ADMIN" | string>;
 }
 
 export class ApiClient {
@@ -454,8 +454,8 @@ export interface User {
   lastName: string;
   email: string;
   // Keep existing single role for compatibility, but prefer roles[]
-  role?: "STUDENT" | "TEACHER" | "ADMIN";
-  roles?: Array<"STUDENT" | "TEACHER" | "ADMIN">;
+  role?: "USER" | "STUDENT" | "TEACHER" | "ADMIN";
+  roles?: Array<"USER" | "STUDENT" | "TEACHER" | "ADMIN">;
   profileImageUrl?: string;
 }
 
