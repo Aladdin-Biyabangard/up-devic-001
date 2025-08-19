@@ -10,7 +10,7 @@ interface LoginResponse {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: (User & { role?: string[] }) | null;
   loading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -40,7 +40,22 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<(User & { role?: string[] }) | null>(() => {
+    try {
+      const saved = localStorage.getItem('auth_user');
+      const parsed = saved ? JSON.parse(saved) : null;
+      if (parsed) {
+        // normalize role to array
+        const normalizedRole: string[] = Array.isArray(parsed.role)
+          ? parsed.role
+          : parsed.role
+          ? [String(parsed.role)]
+          : (parsed.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+        return { ...parsed, role: normalizedRole };
+      }
+    } catch {}
+    return null;
+  });
   const [loading, setLoading] = useState(true);
   const { isTokenValid, setTokens, clearTokens, getTokenPayload } = useJWT();
 
@@ -77,21 +92,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (isTokenValid()) {
         const userProfile = await api.getUserProfile() as User;
         const token = localStorage.getItem('auth_token') || undefined;
-        const roles = deriveRolesFromAnywhere(token, undefined, userProfile);
-        if (roles && roles.length) {
-          localStorage.setItem('auth_roles', JSON.stringify(roles));
-        } else {
-          localStorage.removeItem('auth_roles');
-        }
-        setUser({ ...userProfile, roles: roles || (userProfile as any).roles });
+        const roles = deriveRolesFromAnywhere(token, undefined, userProfile) || [];
+        localStorage.setItem('auth_roles', JSON.stringify(roles));
+        const normalizedRole: string[] = Array.isArray((userProfile as any).role)
+          ? (userProfile as any).role
+          : (userProfile as any).role
+          ? [String((userProfile as any).role)]
+          : roles;
+        const normalizedUser = { ...userProfile, role: normalizedRole, roles };
+        setUser(normalizedUser as any);
+        localStorage.setItem('auth_user', JSON.stringify(normalizedUser));
       } else {
         clearTokens();
         setUser(null);
+        localStorage.removeItem('auth_user');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
       clearTokens();
       setUser(null);
+      localStorage.removeItem('auth_user');
     } finally {
       setLoading(false);
     }
@@ -104,15 +124,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response && response.accessToken) {
         setTokens(response.accessToken, response.refreshToken);
         const rolesFromLoginOrToken = deriveRolesFromAnywhere(response.accessToken, response);
-        if (rolesFromLoginOrToken && rolesFromLoginOrToken.length) {
-          localStorage.setItem('auth_roles', JSON.stringify(rolesFromLoginOrToken));
-        } else {
-          localStorage.removeItem('auth_roles');
-        }
+        const roles = rolesFromLoginOrToken || [];
+        localStorage.setItem('auth_roles', JSON.stringify(roles));
         // Fetch user profile after successful login and enrich with roles
         const userProfile = await api.getUserProfile() as User;
-        const roles = rolesFromLoginOrToken || deriveRolesFromAnywhere(undefined, response, userProfile);
-        setUser({ ...userProfile, roles: roles as ("STUDENT" | "TEACHER" | "ADMIN")[] });
+        const normalizedRole: string[] = Array.isArray((userProfile as any).role)
+          ? (userProfile as any).role
+          : (userProfile as any).role
+          ? [String((userProfile as any).role)]
+          : roles;
+        const normalizedUser = { ...userProfile, role: normalizedRole, roles };
+        setUser(normalizedUser as any);
+        localStorage.setItem('auth_user', JSON.stringify(normalizedUser));
       } else {
         throw new Error('Invalid response from login API');
       }
@@ -146,6 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       clearTokens();
       localStorage.removeItem('auth_roles');
+      localStorage.removeItem('auth_user');
       setUser(null);
     }
   };

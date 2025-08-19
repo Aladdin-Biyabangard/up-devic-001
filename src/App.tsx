@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SidebarNavigation } from "@/components/layout/Navigation";
@@ -25,7 +25,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -59,7 +59,7 @@ const AppContent = () => {
           <Route path="/lessons/:lessonId" element={<LessonPage />} />
           <Route path="/teacher" element={<TeacherPanelPage />} />
           <Route path="/student" element={<StudentPanelPage />} />
-          <Route path="/admin" element={<AdminPanelPage />} />
+          <Route path="/admin" element={<AdminRoute user={user} />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/auth" element={<AuthPage />} />
@@ -88,3 +88,13 @@ const App = () => {
 };
 
 export default App;
+
+function AdminRoute({ user }: { user: any }) {
+  const roles: string[] = Array.isArray(user?.role)
+    ? (user?.role as string[])
+    : ((user as any)?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+  if (!user || !roles.includes('ADMIN')) {
+    return <Navigate to="/auth" replace />;
+  }
+  return <AdminPanelPage />;
+}

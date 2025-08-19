@@ -21,7 +21,9 @@ export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const roles: string[] = (user as any)?.roles || (user?.role ? [user.role] : JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+  const roles: string[] = Array.isArray(user?.role)
+    ? (user?.role as string[])
+    : ((user as any)?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
 
   useEffect(() => {
     loadInitialData();
@@ -129,7 +131,7 @@ export default function HomePage() {
               </Button>
             )}
             
-            {user && roles?.includes('ADMIN') && (
+            {user?.role?.includes?.('ADMIN') && (
               <Button
                 size="lg"
                 onClick={() => navigate('/admin')}

@@ -23,7 +23,9 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const roles: string[] = (user as any)?.roles || (user?.role ? [user.role] : JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+  const roles: string[] = Array.isArray(user?.role)
+    ? (user?.role as string[])
+    : ((user as any)?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +94,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
               </Link>
             </Button>
           )}
-          {user && roles?.includes('ADMIN') && (
+          {user?.role?.includes?.('ADMIN') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
               <Link to="/admin" className="gap-2">
                 <PanelsTopLeft className="h-4 w-4" />
@@ -138,7 +140,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {roles?.includes('ADMIN') && (
+                {user?.role?.includes?.('ADMIN') && (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="cursor-pointer">
                       <PanelsTopLeft className="mr-2 h-4 w-4" />
