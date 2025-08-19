@@ -93,8 +93,8 @@ export class ApiClient {
     const config: RequestInit = {
       headers: {
         ...(isFormData
-          ? { 'Accept': 'application/json' }
-          : { "Content-Type": "application/json", 'Accept': 'application/json' }
+          ? { 'Accept': 'application/json, text/plain, */*' }
+          : { "Content-Type": "application/json", 'Accept': 'application/json, text/plain, */*' }
         ),
         'Access-Control-Allow-Origin': '*',
         ...this.getAuthHeaders(),
@@ -119,7 +119,13 @@ export class ApiClient {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        return await response.json();
+      }
+      const text = await response.text();
+      // @ts-expect-error allow plain text returns
+      return text as T;
     } catch (error) {
       console.error("API request failed:", error);
       throw error;
@@ -239,21 +245,25 @@ export class ApiClient {
     return this.request("/users/-profile");
   }
 
-  async updateUserProfile(profile: { bio?: string; socialLink?: string[]; skill?: string[] }) {
+  async updateUserProfile(profile: { bio?: string; socialLink?: string[]; skill?: string[] }): Promise<string> {
+    const payload: Record<string, any> = {};
+    if (typeof profile.bio === 'string') payload.bio = profile.bio;
+    if (Array.isArray(profile.socialLink)) payload.socialLink = profile.socialLink;
+    if (Array.isArray(profile.skill)) payload.skill = profile.skill;
     return this.request("/users/profile", {
       method: "PUT",
-      body: JSON.stringify(profile),
+      body: JSON.stringify(payload),
     });
   }
 
-  async changeUserPassword(payload: { currentPassword: string; newPassword: string; retryPassword: string }) {
+  async changeUserPassword(payload: { currentPassword: string; newPassword: string; retryPassword: string }): Promise<string> {
     return this.request("/users/password", {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
   }
 
-  async uploadUserPhoto(file: File) {
+  async uploadUserPhoto(file: File): Promise<string> {
     const form = new FormData();
     form.append("multipartFile", file);
     return this.request("/users/-photo", {
