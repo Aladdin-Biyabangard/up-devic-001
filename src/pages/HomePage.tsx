@@ -22,8 +22,6 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   const roles: string[] = (user as any)?.roles || (user?.role ? [user.role] : JSON.parse(localStorage.getItem('auth_roles') || '[]'));
-  const hasStudentOnly = roles.length > 0 && roles.every((r) => r === 'STUDENT');
-  const hasStudentAndTeacher = roles.includes('STUDENT') && roles.includes('TEACHER') && roles.every((r) => r === 'STUDENT' || r === 'TEACHER');
 
   useEffect(() => {
     loadInitialData();
@@ -109,13 +107,35 @@ export default function HomePage() {
             <Button size="lg" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
               <Link to="/auth?mode=register">Get Started Free</Link>
             </Button>
-            {(hasStudentOnly || hasStudentAndTeacher) && (
+            
+            {/* Role-based Panel Buttons */}
+            {user && roles?.includes('STUDENT') && (
               <Button
                 size="lg"
                 onClick={() => navigate('/student')}
                 className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400 rounded-full px-6"
               >
                 Student Panel
+              </Button>
+            )}
+            
+            {user && roles?.includes('TEACHER') && (
+              <Button
+                size="lg"
+                onClick={() => navigate('/teacher')}
+                className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white shadow-lg hover:shadow-xl hover:from-blue-400 hover:via-indigo-400 hover:to-purple-400 rounded-full px-6"
+              >
+                Teacher Panel
+              </Button>
+            )}
+            
+            {user && roles?.includes('ADMIN') && (
+              <Button
+                size="lg"
+                onClick={() => navigate('/admin')}
+                className="bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 text-white shadow-lg hover:shadow-xl hover:from-red-400 hover:via-pink-400 hover:to-rose-400 rounded-full px-6"
+              >
+                Admin Panel
               </Button>
             )}
           </div>
