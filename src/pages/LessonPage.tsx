@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -37,6 +37,7 @@ const LessonPage = () => {
   const navigate = useNavigate();
   const [commentsPage, setCommentsPage] = useState(0);
   const pageSize = 10;
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     data: lesson,
@@ -71,6 +72,40 @@ const LessonPage = () => {
   useEffect(() => {
     refetchComments();
   }, [commentsPage]);
+
+  // Set up 5-minute interval for lesson access verification
+  useEffect(() => {
+    if (!lessonId) return;
+
+    const verifyLessonAccess = async () => {
+      try {
+        await api.getLesson(lessonId);
+      } catch (error: any) {
+        // Check if it's an authentication error
+        if (error?.message?.includes('Authentication failed') || 
+            error?.status === 401 || 
+            error?.status === 403) {
+          // Clear interval and redirect to login
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          navigate('/auth');
+        }
+      }
+    };
+
+    // Set up interval for every 5 minutes (300000 ms)
+    intervalRef.current = setInterval(verifyLessonAccess, 300000);
+
+    // Cleanup function
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [lessonId, navigate]);
 
   return (
     <div className="min-h-screen">
