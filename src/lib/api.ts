@@ -124,7 +124,7 @@ export class ApiClient {
   }
 
   // Course endpoints
-  async getCourses(searchCriteria?: Record<string, string | number | boolean>) {
+  async getCourses(searchCriteria?: Record<string, string | number | boolean>): Promise<Course[]> {
     const filtered = Object.fromEntries(
       Object.entries(searchCriteria || {}).filter(([_, v]) => v !== undefined)
     );
@@ -142,55 +142,55 @@ export class ApiClient {
     });
   }
 
-  async getCourse(courseId: string) {
+  async getCourse(courseId: string): Promise<CourseDetail> {
     return this.request(`/v1/course/${courseId}`);
   }
 
-  async getPopularCourses() {
+  async getPopularCourses(): Promise<Course[]> {
     return this.request("/v1/course/popular-courses");
   }
 
-  async getCategories() {
+  async getCategories(): Promise<CategoryDto[]> {
     return this.request("/v1/course/categories");
   }
 
-  async getCoursesByCategory(category: string) {
+  async getCoursesByCategory(category: string): Promise<Course[]> {
     return this.request(
       `/v1/course/category?categoryType=${category}&page=0&size=100`
     );
   }
 
   // Wishlist endpoints
-  async getWishlist(page: number = 0, size: number = 12) {
+  async getWishlist(page: number = 0, size: number = 12): Promise<any> {
     return this.request(`/v1/course/wish?page=${page}&size=${size}`, {
       method: "GET",
     });
   }
 
-  async addCourseToWishlist(courseId: string) {
+  async addCourseToWishlist(courseId: string): Promise<any> {
     return this.request(`/v1/course/${courseId}/wish`, {
       method: "POST",
     });
   }
 
-  async removeCourseFromWishlist(courseId: string) {
+  async removeCourseFromWishlist(courseId: string): Promise<any> {
     return this.request(`/v1/course/${courseId}/wish`, {
       method: "DELETE",
     });
   }
 
-  async rateCourse(courseId: string, rating: number) {
+  async rateCourse(courseId: string, rating: number): Promise<any> {
     return this.request(`/v1/course/${courseId}/rating?rating=${encodeURIComponent(String(rating))}`, {
       method: "PATCH",
     });
   }
 
   // Lesson endpoints
-  async getLessonsByCourse(courseId: string) {
+  async getLessonsByCourse(courseId: string): Promise<LessonItem[]> {
     return this.request(`/v1/lessons/courses/${courseId}`);
   }
 
-  async getLesson(lessonId: string) {
+  async getLesson(lessonId: string): Promise<any> {
     return this.request(`/v1/lessons/${lessonId}`);
   }
 
@@ -409,6 +409,33 @@ export interface Course {
   studentsCount: number;
 }
 
+export interface CourseDetail {
+  photo_url: string;
+  headTeacher: {
+    firstName: string;
+    lastName: string;
+  };
+  teachers: Array<{
+    firstName: string;
+    lastName: string;
+  }>;
+  title: string;
+  description: string;
+  price: number;
+  rating: number;
+  category: string;
+  duration: string;
+  studentsCount: number;
+}
+
+export interface LessonItem {
+  lessonId: string;
+  title: string;
+  description: string;
+  duration?: string;
+  order?: number;
+}
+
 export interface Lesson {
   id: string;
   title: string;
@@ -433,4 +460,20 @@ export interface Comment {
   authorName: string;
   updatedAt: string;
   rating?: number;
+}
+
+export interface PagedCommentsResponse {
+  content: Array<{
+    commentId: string | number;
+    firstName: string;
+    content: string;
+    updatedAt: string;
+  }>;
+  page: number;
+  size: number;
+}
+
+export interface CategoryDto {
+  category: string;
+  courseCount: number;
 }
