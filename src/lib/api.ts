@@ -396,13 +396,57 @@ export class ApiClient {
     return this.request("/payment/balance");
   }
 
-  // Admin endpoints
-  async getAllUsers() {
-    return this.request("/admin/users");
+  // Admin endpoints (for admin panel functionality)
+  async getAllUsers(afterId?: string, limit?: number): Promise<User[]> {
+    const params = new URLSearchParams();
+    if (afterId) params.append('afterId', afterId);
+    if (limit) params.append('limit', limit.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request(`/api/v1/admin/users${query}`) as Promise<User[]>;
   }
 
-  async getUsersCount() {
-    return this.request("/admin/users/count");
+  async getUsersCount(): Promise<{ count: number }> {
+    return this.request('/api/v1/admin/users/count') as Promise<{ count: number }>;
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    return this.request(`/api/v1/admin/role?role=${role}`) as Promise<User[]>;
+  }
+
+  async removeUserRole(userId: string, role: string): Promise<void> {
+    return this.request(`/api/v1/admin/users/${userId}/role?role=${role}`, {
+      method: 'PUT'
+    }) as Promise<void>;
+  }
+
+  async assignUserRole(userId: string, role: string): Promise<void> {
+    return this.request(`/api/v1/admin/users/${userId}/assign/role?role=${role}`, {
+      method: 'PUT'
+    }) as Promise<void>;
+  }
+
+  async deactivateUser(userId: string): Promise<void> {
+    return this.request(`/api/v1/admin/users/${userId}/deactivate`, {
+      method: 'PUT'
+    }) as Promise<void>;
+  }
+
+  async activateUser(userId: string): Promise<void> {
+    return this.request(`/api/v1/admin/users/${userId}/activate`, {
+      method: 'PUT'
+    }) as Promise<void>;
+  }
+
+  async assignTeacherProfile(email: string): Promise<void> {
+    return this.request(`/api/v1/admin/assign/${email}`, {
+      method: 'POST'
+    }) as Promise<void>;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    return this.request(`/api/v1/admin/users/${userId}`, {
+      method: 'DELETE'
+    }) as Promise<void>;
   }
 }
 
@@ -467,6 +511,9 @@ export interface User {
   role?: "USER" | "STUDENT" | "TEACHER" | "ADMIN";
   roles?: Array<"USER" | "STUDENT" | "TEACHER" | "ADMIN">;
   profileImageUrl?: string;
+  status?: 'ACTIVE' | 'INACTIVE';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Comment {
