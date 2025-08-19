@@ -45,13 +45,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { isTokenValid, setTokens, clearTokens, getTokenPayload } = useJWT();
 
   const deriveRolesFromAnywhere = (token?: string, loginResp?: LoginResponse, profile?: User): string[] | undefined => {
-    // Priority: login response roles -> JWT payload roles/role -> user profile role
-    if (loginResp?.roles && loginResp.roles.length) return loginResp.roles as string[];
-    if (loginResp?.user?.roles && loginResp.user.roles.length) return loginResp.user.roles as string[];
+    const normalize = (arr?: unknown): string[] | undefined => {
+      if (!arr) return undefined;
+      const list = Array.isArray(arr) ? arr : [arr];
+      const cleaned = list
+        .filter(Boolean)
+        .map((r) => String(r).toUpperCase().trim());
+      return cleaned.length ? cleaned : undefined;
+    };
+
+    // Priority 1: explicit roles in login response
+    const fromLoginDirect = normalize((loginResp as any)?.roles);
+    if (fromLoginDirect) return fromLoginDirect;
+    const fromLoginUser = normalize((loginResp as any)?.user?.roles || (loginResp as any)?.user?.authorities);
+    if (fromLoginUser) return fromLoginUser;
+
+    // Priority 2: JWT payload
     const payload = getTokenPayload(token);
-    if (payload && Array.isArray((payload as any).roles)) return (payload as any).roles as string[];
-    if (payload && (payload as any).role) return [String((payload as any).role)];
-    if (profile?.role) return [profile.role];
+    const fromPayload = normalize((payload as any)?.roles || (payload as any)?.authorities || (payload as any)?.role);
+    if (fromPayload) return fromPayload;
+
+    // Priority 3: user profile
+    const fromProfile = normalize((profile as any)?.roles || (profile as any)?.role);
+    if (fromProfile) return fromProfile;
+
     return undefined;
   };
 
@@ -63,6 +80,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const roles = deriveRolesFromAnywhere(token, undefined, userProfile);
         if (roles && roles.length) {
           localStorage.setItem('auth_roles', JSON.stringify(roles));
+        } else {
+          localStorage.removeItem('auth_roles');
         }
         setUser({ ...userProfile, roles: roles || (userProfile as any).roles });
       } else {
@@ -87,6 +106,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const rolesFromLoginOrToken = deriveRolesFromAnywhere(response.accessToken, response);
         if (rolesFromLoginOrToken && rolesFromLoginOrToken.length) {
           localStorage.setItem('auth_roles', JSON.stringify(rolesFromLoginOrToken));
+        } else {
+          localStorage.removeItem('auth_roles');
         }
         // Fetch user profile after successful login and enrich with roles
         const userProfile = await api.getUserProfile() as User;
