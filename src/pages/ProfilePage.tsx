@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { api, User } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +26,27 @@ type ProfileDto = {
 export default function ProfilePage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const queryClient = useQueryClient();
+
+  const mapUserProfileToProfileDto = (p: any): ProfileDto => {
+    return {
+      id: p?.id || "",
+      firstName: p?.firstName || "",
+      lastName: p?.lastName || "",
+      email: p?.email || "",
+      profileImageUrl: p?.profilePhoto_url || p?.profileImageUrl,
+      bio: p?.bio || "",
+      socialLink: p?.socialLinks || p?.socialLink || [],
+      skill: p?.skills || p?.skill || [],
+    };
+  };
 
   const { data: profile, isLoading, isError, error, refetch } = useQuery<ProfileDto>({
     queryKey: ["profile"],
-    queryFn: () => api.getUserProfile() as Promise<ProfileDto>,
+    queryFn: async () => {
+      const raw = await api.getUserProfile();
+      return mapUserProfileToProfileDto(raw);
+    },
     staleTime: 30_000,
   });
 
@@ -67,8 +84,14 @@ export default function ProfilePage() {
     try {
       setSavingProfile(true);
       await api.updateUserProfile({ bio, socialLink: socialLinks, skill: skills });
+      // Immediately fetch updated profile and update local/cache state
+      const updatedRaw = await api.getUserProfile();
+      const updated = mapUserProfileToProfileDto(updatedRaw);
+      queryClient.setQueryData(["profile"], updated);
+      setBio(updated.bio || "");
+      setSocialLinks(updated.socialLink || []);
+      setSkills(updated.skill || []);
       toast({ title: "Profile updated" });
-      await refetch();
     } catch (e: any) {
       toast({ title: "Failed to update profile", description: e?.message, variant: "destructive" as any });
     } finally {
@@ -96,8 +119,10 @@ export default function ProfilePage() {
   const handleUploadPhoto = async (file: File) => {
     try {
       await api.uploadUserPhoto(file);
+      const updatedRaw = await api.getUserProfile();
+      const updated = mapUserProfileToProfileDto(updatedRaw);
+      queryClient.setQueryData(["profile"], updated);
       toast({ title: "Profile photo updated" });
-      await refetch();
     } catch (e: any) {
       toast({ title: "Failed to upload photo", description: e?.message, variant: "destructive" as any });
     }
