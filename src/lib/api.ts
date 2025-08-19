@@ -241,11 +241,11 @@ export class ApiClient {
     }
   }
 
-  async getUserProfile() {
-    return this.request("/users/-profile");
+  async getUserProfile(): Promise<UserProfile> {
+    return this.request("/users/profile");
   }
 
-  async updateUserProfile(profile: { bio?: string; socialLink?: string[]; skill?: string[] }): Promise<string> {
+  async updateUserProfile(profile: { bio?: string; socialLink?: string[]; skill?: string[] }): Promise<{ message: string }> {
     const payload: Record<string, any> = {};
     if (typeof profile.bio === 'string') payload.bio = profile.bio;
     if (Array.isArray(profile.socialLink)) payload.socialLink = profile.socialLink;
@@ -256,17 +256,17 @@ export class ApiClient {
     });
   }
 
-  async changeUserPassword(payload: { currentPassword: string; newPassword: string; retryPassword: string }): Promise<string> {
+  async changeUserPassword(payload: { currentPassword: string; newPassword: string; retryPassword: string }): Promise<{ message: string }> {
     return this.request("/users/password", {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
   }
 
-  async uploadUserPhoto(file: File): Promise<string> {
+  async uploadUserPhoto(file: File): Promise<{ message: string }> {
     const form = new FormData();
     form.append("multipartFile", file);
-    return this.request("/users/-photo", {
+    return this.request("/users/profile/photo", {
       method: "PATCH",
       body: form,
     });
@@ -463,6 +463,14 @@ export class ApiClient {
 export const api = ApiClient.getInstance();
 
 // Type definitions based on the API
+export interface UserProfile {
+  firstName: string;
+  lastName: string;
+  profilePhoto_url?: string;
+  bio?: string;
+  socialLinks?: string[];
+  skills?: string[];
+}
 export interface Course {
   courseId: string;
   title: string;
