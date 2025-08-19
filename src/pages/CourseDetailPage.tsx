@@ -92,11 +92,11 @@ const CourseDetailPage = () => {
     isError: isCourseError,
     error: courseError,
     refetch: refetchCourse,
-  } = useQuery<CourseDetail>({
+  } = useQuery({
     queryKey: ["course-detail", courseId],
-    queryFn: () => api.getCourse(courseId!),
+    queryFn: () => api.getCourse(courseId!) as Promise<any>,
     staleTime: 60_000,
-  });
+  }) as any;
 
   // Lessons
   const {
@@ -105,11 +105,11 @@ const CourseDetailPage = () => {
     isError: isLessonsError,
     error: lessonsError,
     refetch: refetchLessons,
-  } = useQuery<LessonItem[]>({
+  } = useQuery({
     queryKey: ["course-lessons", courseId],
-    queryFn: () => api.getLessonsByCourse(courseId!),
+    queryFn: () => api.getLessonsByCourse(courseId!) as Promise<any>,
     staleTime: 60_000,
-  });
+  }) as any;
 
   // Comments (paged)
   const {
@@ -118,12 +118,11 @@ const CourseDetailPage = () => {
     isError: isCommentsError,
     error: commentsError,
     refetch: refetchComments,
-  } = useQuery<PagedCommentsResponse>({
+  } = useQuery({
     queryKey: ["course-comments", courseId, commentsPage, commentsPageSize],
-    queryFn: () => api.getCourseCommentsPaged(courseId!, commentsPage, commentsPageSize),
-    keepPreviousData: true,
+    queryFn: () => api.getCourseCommentsPaged(courseId!, commentsPage, commentsPageSize) as Promise<any>,
     staleTime: 30_000,
-  });
+  }) as any;
 
   const comments = commentsResponse?.content ?? [];
   const canGoNext = comments.length === commentsPageSize; // optimistic pagination

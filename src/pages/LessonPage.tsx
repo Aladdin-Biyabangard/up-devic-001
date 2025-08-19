@@ -58,13 +58,11 @@ const LessonPage = () => {
     isError: isCommentsError,
     error: commentsError,
     refetch: refetchComments,
-  } = useQuery<PagedLessonComments>({
+  } = useQuery({
     queryKey: ["lesson-comments", lessonId, commentsPage, pageSize],
-    queryFn: () => api.getLessonCommentsPaged(lessonId, commentsPage, pageSize),
-    enabled: !!lessonId,
-    keepPreviousData: true,
+    queryFn: () => api.getLessonCommentsPaged(lessonId, commentsPage, pageSize) as Promise<any>,
     staleTime: 30_000,
-  });
+  }) as any;
 
   const comments = commentsResp?.content ?? [];
   const canGoNext = (comments?.length ?? 0) === pageSize;

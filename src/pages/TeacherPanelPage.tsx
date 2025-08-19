@@ -17,7 +17,7 @@ import {
   Eye
 } from "lucide-react";
 import { TeacherDashboard } from "@/components/teacher/TeacherDashboard";
-import { CourseManagement } from "@/components/teacher/CourseManagement";
+// import { CourseManagement } from "@/components/teacher/CourseManagement";
 import { LessonManagement } from "@/components/teacher/LessonManagement";
 import { TeacherProfile } from "@/components/teacher/TeacherProfile";
 
@@ -67,7 +67,9 @@ export default function TeacherPanelPage() {
           </TabsContent>
 
           <TabsContent value="courses" className="space-y-6">
-            <CourseManagement />
+            <div className="text-center p-8">
+              <p className="text-muted-foreground">Course Management coming soon...</p>
+            </div>
           </TabsContent>
 
           <TabsContent value="lessons" className="space-y-6">

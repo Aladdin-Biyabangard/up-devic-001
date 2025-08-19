@@ -194,7 +194,7 @@ export class ApiClient {
     return this.request(`/v1/lessons/${lessonId}`);
   }
 
-  async login(credentials: { email: string; password: string }) {
+  async login(credentials: { email: string; password: string }): Promise<any> {
     return this.request("/v1/auth/sign-in", {
       method: "POST",
       body: JSON.stringify(credentials),
@@ -206,21 +206,21 @@ export class ApiClient {
     password: string;
     firstName: string;
     lastName: string;
-  }) {
+  }): Promise<any> {
     return this.request("/v1/auth/sign-up", {
       method: "POST",
       body: JSON.stringify(userData),
     });
   }
 
-  async refreshToken(refreshToken: string) {
+  async refreshToken(refreshToken: string): Promise<any> {
     return this.request("/v1/auth/refresh", {
       method: "POST",
       body: JSON.stringify({ refreshToken }),
     });
   }
 
-  async logout() {
+  async logout(): Promise<void> {
     try {
       await this.request("/v1/auth/sign-out", {
         method: "POST",
@@ -264,19 +264,19 @@ export class ApiClient {
     return this.request(`/v1/comments/courses/${courseId}?page=0&size=50`);
   }
 
-  async getCourseCommentsPaged(courseId: string, page: number = 0, size: number = 10) {
+  async getCourseCommentsPaged(courseId: string, page: number = 0, size: number = 10): Promise<PagedCommentsResponse> {
     return this.request(`/v1/comments/courses/${courseId}?page=${page}&size=${size}`);
   }
 
-  async getLessonComments(lessonId: string) {
+  async getLessonComments(lessonId: string): Promise<any> {
     return this.request(`/v1/comments/lessons/${lessonId}`);
   }
 
-  async getLessonCommentsPaged(lessonId: string, page: number = 0, size: number = 10) {
+  async getLessonCommentsPaged(lessonId: string, page: number = 0, size: number = 10): Promise<PagedCommentsResponse> {
     return this.request(`/v1/comments/lessons/${lessonId}?page=${page}&size=${size}`);
   }
 
-  async addCommentToCourse(courseId: string, comment: string) {
+  async addCommentToCourse(courseId: string, comment: string): Promise<any> {
     return this.request(`/v1/comments/courses${courseId}`, {
       method: "POST",
       body: JSON.stringify({ content: comment }),
@@ -284,15 +284,15 @@ export class ApiClient {
   }
 
   // Teacher endpoints
-  async getTeacherInfo() {
+  async getTeacherInfo(): Promise<any> {
     return this.request("/teacher/info");
   }
 
-  async getTeacherCourses() {
+  async getTeacherCourses(): Promise<Course[]> {
     return this.request("/teacher/courses");
   }
 
-  async searchTeachers(query: string) {
+  async searchTeachers(query: string): Promise<any> {
     return this.request(`/teacher/search?query=${query}`);
   }
 

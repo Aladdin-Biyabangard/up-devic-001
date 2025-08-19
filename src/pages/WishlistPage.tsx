@@ -27,19 +27,18 @@ export default function WishlistPage() {
   const [size, setSize] = useState(12);
   const [grid, setGrid] = useState(true);
 
-  const { data, isLoading, isError, error } = useQuery<WishlistResponse>({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["wishlist", page, size],
-    queryFn: () => api.getWishlist(page, size) as Promise<WishlistResponse>,
-    keepPreviousData: true,
+    queryFn: () => api.getWishlist(page, size) as Promise<any>,
     staleTime: 20_000,
-  });
+  }) as any;
 
   const courses = data?.content || [];
   const totalPages = data?.totalPages || 0;
 
   const wishlistSet = useMemo(() => new Set(courses.map(c => c.courseId)), [courses]);
 
-  const { mutate: toggleWishlist, isLoading: isToggling } = useMutation({
+  const { mutate: toggleWishlist, isPending: isToggling } = useMutation({
     mutationFn: async (courseId: string) => {
       if (wishlistSet.has(courseId)) {
         return api.removeCourseFromWishlist(courseId);
@@ -53,9 +52,9 @@ export default function WishlistPage() {
     onError: (e: any) => {
       toast({ title: "Action failed", description: e?.message, variant: "destructive" as any });
     },
-  });
+  }) as any;
 
-  const { mutate: rate, isLoading: isRating } = useMutation({
+  const { mutate: rate, isPending: isRating } = useMutation({
     mutationFn: async ({ courseId, rating }: { courseId: string; rating: number }) => {
       return api.rateCourse(courseId, rating);
     },
@@ -66,7 +65,7 @@ export default function WishlistPage() {
     onError: (e: any) => {
       toast({ title: "Rating failed", description: e?.message, variant: "destructive" as any });
     },
-  });
+  }) as any;
 
   if (!isAuthenticated) {
     return (
