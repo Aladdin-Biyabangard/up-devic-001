@@ -76,6 +76,14 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
 
         {/* User Actions */}
         <div className="flex items-center gap-4">
+          {user && roles?.includes('STUDENT') && (
+            <Button variant="secondary" className="hidden md:flex" asChild>
+              <Link to="/student" className="gap-2">
+                <PanelsTopLeft className="h-4 w-4" />
+                Student Panel
+              </Link>
+            </Button>
+          )}
           {user && roles?.includes('TEACHER') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
               <Link to="/teacher" className="gap-2">
@@ -114,6 +122,14 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
+                {roles?.includes('STUDENT') && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/student" className="cursor-pointer">
+                      <PanelsTopLeft className="mr-2 h-4 w-4" />
+                      Student Panel
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 {roles?.includes('TEACHER') && (
                   <DropdownMenuItem asChild>
                     <Link to="/teacher" className="cursor-pointer">
