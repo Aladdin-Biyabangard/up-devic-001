@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import CourseDetailPage from "./pages/CourseDetailPage";
 import LessonPage from "./pages/LessonPage";
 import TeacherPanelPage from "./pages/TeacherPanelPage";
+import AdminPanelPage from "./pages/AdminPanelPage";
 import ProfilePage from "./pages/ProfilePage";
 import WishlistPage from "./pages/WishlistPage";
 
@@ -55,7 +56,8 @@ const AppContent = () => {
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
           <Route path="/lessons/:lessonId" element={<LessonPage />} />
-          <Route path="/teacher-panel" element={<TeacherPanelPage />} />
+          <Route path="/teacher" element={<TeacherPanelPage />} />
+          <Route path="/admin" element={<AdminPanelPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/auth" element={<AuthPage />} />

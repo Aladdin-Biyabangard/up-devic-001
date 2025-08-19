@@ -5,7 +5,8 @@ import { useJWT } from '@/hooks/use-jwt';
 interface LoginResponse {
   accessToken: string;
   refreshToken?: string;
-  user?: User;
+  user?: User & { roles?: string[] };
+  roles?: string[]; // some APIs may return roles at root
 }
 
 interface AuthContextType {
@@ -41,13 +42,29 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { isTokenValid, setTokens, clearTokens } = useJWT();
+  const { isTokenValid, setTokens, clearTokens, getTokenPayload } = useJWT();
+
+  const deriveRolesFromAnywhere = (token?: string, loginResp?: LoginResponse, profile?: User): string[] | undefined => {
+    // Priority: login response roles -> JWT payload roles/role -> user profile role
+    if (loginResp?.roles && loginResp.roles.length) return loginResp.roles as string[];
+    if (loginResp?.user?.roles && loginResp.user.roles.length) return loginResp.user.roles as string[];
+    const payload = getTokenPayload(token);
+    if (payload && Array.isArray((payload as any).roles)) return (payload as any).roles as string[];
+    if (payload && (payload as any).role) return [String((payload as any).role)];
+    if (profile?.role) return [profile.role];
+    return undefined;
+  };
 
   const checkAuth = async () => {
     try {
       if (isTokenValid()) {
         const userProfile = await api.getUserProfile() as User;
-        setUser(userProfile);
+        const token = localStorage.getItem('auth_token') || undefined;
+        const roles = deriveRolesFromAnywhere(token, undefined, userProfile);
+        if (roles && roles.length) {
+          localStorage.setItem('auth_roles', JSON.stringify(roles));
+        }
+        setUser({ ...userProfile, roles: roles || (userProfile as any).roles });
       } else {
         clearTokens();
         setUser(null);
@@ -67,10 +84,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response && response.accessToken) {
         setTokens(response.accessToken, response.refreshToken);
-        
-        // Fetch user profile after successful login
+        const rolesFromLoginOrToken = deriveRolesFromAnywhere(response.accessToken, response);
+        if (rolesFromLoginOrToken && rolesFromLoginOrToken.length) {
+          localStorage.setItem('auth_roles', JSON.stringify(rolesFromLoginOrToken));
+        }
+        // Fetch user profile after successful login and enrich with roles
         const userProfile = await api.getUserProfile() as User;
-        setUser(userProfile);
+        const roles = rolesFromLoginOrToken || deriveRolesFromAnywhere(undefined, response, userProfile);
+        setUser({ ...userProfile, roles });
       } else {
         throw new Error('Invalid response from login API');
       }
@@ -103,6 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout failed:', error);
     } finally {
       clearTokens();
+      localStorage.removeItem('auth_roles');
       setUser(null);
     }
   };

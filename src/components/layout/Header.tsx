@@ -23,6 +23,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const roles: string[] = (user as any)?.roles || (user?.role ? [user.role] : JSON.parse(localStorage.getItem('auth_roles') || '[]'));
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,11 +76,19 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
 
         {/* User Actions */}
         <div className="flex items-center gap-4">
-          {user?.role === 'TEACHER' && (
+          {user && roles?.includes('TEACHER') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
-              <Link to="/teacher-panel" className="gap-2">
+              <Link to="/teacher" className="gap-2">
                 <PanelsTopLeft className="h-4 w-4" />
                 Teacher Panel
+              </Link>
+            </Button>
+          )}
+          {user && roles?.includes('ADMIN') && (
+            <Button variant="secondary" className="hidden md:flex" asChild>
+              <Link to="/admin" className="gap-2">
+                <PanelsTopLeft className="h-4 w-4" />
+                Admin Panel
               </Link>
             </Button>
           )}
@@ -105,11 +114,19 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                {user?.role === 'TEACHER' && (
+                {roles?.includes('TEACHER') && (
                   <DropdownMenuItem asChild>
-                    <Link to="/teacher-panel" className="cursor-pointer">
+                    <Link to="/teacher" className="cursor-pointer">
                       <PanelsTopLeft className="mr-2 h-4 w-4" />
                       Teacher Panel
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {roles?.includes('ADMIN') && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="cursor-pointer">
+                      <PanelsTopLeft className="mr-2 h-4 w-4" />
+                      Admin Panel
                     </Link>
                   </DropdownMenuItem>
                 )}

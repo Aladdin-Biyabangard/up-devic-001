@@ -51,7 +51,15 @@ export default function AuthPage() {
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
-      navigate("/");
+      const rolesRaw = localStorage.getItem('auth_roles');
+      const roles: string[] = rolesRaw ? JSON.parse(rolesRaw) : [];
+      if (roles.includes('ADMIN')) {
+        navigate('/admin');
+      } else if (roles.includes('TEACHER')) {
+        navigate('/teacher');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       toast({
         title: "Sign in failed",

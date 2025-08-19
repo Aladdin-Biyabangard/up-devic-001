@@ -44,10 +44,11 @@ interface NavigationProps {
 export function Navigation({ vertical = false, className, onItemClick }: NavigationProps) {
   const location = useLocation();
   const { user } = useAuth();
+  const roles: string[] = (user as any)?.roles || (user?.role ? [user.role] : JSON.parse(localStorage.getItem('auth_roles') || '[]'));
   
   const filteredItems = navigationItems.filter(item => {
     if (!item.role) return true;
-    return user?.role === item.role;
+    return roles.includes(item.role);
   });
 
   const containerClasses = vertical 

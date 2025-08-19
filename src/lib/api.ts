@@ -6,7 +6,9 @@ interface JWTPayload {
   exp: number;
   sub: string;
   email: string;
-  role: string;
+  // Some backends provide a single role, others provide an array
+  role?: string;
+  roles?: Array<"STUDENT" | "TEACHER" | "ADMIN" | string>;
 }
 
 export class ApiClient {
@@ -106,9 +108,10 @@ export class ApiClient {
     try {
       const response = await fetch(url, config);
 
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
         // Token expired or invalid, clear it
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_roles');
         throw new Error('Authentication failed. Please login again.');
       }
 
@@ -450,7 +453,9 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: "STUDENT" | "TEACHER" | "ADMIN";
+  // Keep existing single role for compatibility, but prefer roles[]
+  role?: "STUDENT" | "TEACHER" | "ADMIN";
+  roles?: Array<"STUDENT" | "TEACHER" | "ADMIN">;
   profileImageUrl?: string;
 }
 
