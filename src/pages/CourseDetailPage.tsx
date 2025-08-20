@@ -15,8 +15,8 @@ import TeacherName from "@/components/teacher/TeacherName";
 
 type CourseDetail = {
   photo_url: string;
-  headTeacher: number;
-  teachers: number[];
+  headTeacher: string;
+  teachers: string[];
   title: string;
   description: string;
   level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | string;
@@ -174,10 +174,9 @@ const CourseDetailPage = () => {
   const bannerUrl = course?.photo_url;
 
   // Resolve teacher identifiers from potentially different shapes
-  const mainTeacherId: number | undefined = (course?.headTeacher || course?.headTeacherId || course?.headTeacher?.id) as number | undefined;
+  const mainTeacherId: string | undefined = (course?.teacherId || course?.headTeacherId || course?.headTeacher?.id) as string | undefined;
   const { teacherInfo: mainTeacherInfo, loading: isMainTeacherLoading } = useTeacherInfo(mainTeacherId || "");
 
-  console.log(mainTeacherId)
   // Helper to normalize teachers array into displayable entries
   type TeacherEntry = { id?: string | number; firstName?: string; lastName?: string } | string | number;
   const teacherEntries: TeacherEntry[] = Array.isArray(course?.teachers) ? (course?.teachers as TeacherEntry[]) : [];

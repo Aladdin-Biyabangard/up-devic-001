@@ -319,7 +319,7 @@ export class ApiClient {
     return this.request(`/teacher/${teacherId}/info`);
   }
 
-  async getTeacherProfile(teacherId: number): Promise<TeacherProfile> {
+  async getTeacherProfile(teacherId: string): Promise<TeacherProfile> {
     // Base URL already includes "/api"
     return this.request(`/teacher/${teacherId}/profile`);
   }
@@ -566,7 +566,8 @@ export interface User {
   lastName: string;
   email: string;
   // Keep existing single role for compatibility, but prefer roles[]
-  roles?: Array<"ROLE_USER" | "ROLE_STUDENT" | "ROLE_TEACHER" | "ROLE_ADMIN">;
+  role?: "USER" | "STUDENT" | "TEACHER" | "ADMIN";
+  roles?: Array<"USER" | "STUDENT" | "TEACHER" | "ADMIN">;
   profileImageUrl?: string;
   status?: 'ACTIVE' | 'INACTIVE';
   createdAt?: string;
