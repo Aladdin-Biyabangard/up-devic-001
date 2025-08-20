@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Star, Clock, Users, Heart } from "lucide-react";
 import { Course } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useTeacherInfo, getTeacherDisplayName } from "@/hooks/use-teacher-cache";
+import TeacherName from "@/components/teacher/TeacherName";
 
 interface CourseCardProps {
   course: Course;
@@ -22,9 +23,7 @@ export function CourseCard({
   isWishlisted = false,
   className 
 }: CourseCardProps) {
-  
-  const { teacherInfo, loading: teacherLoading } = useTeacherInfo(course.teacherId);
-  
+
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -37,21 +36,7 @@ export function CourseCard({
     <Card className={cn("course-card group", className)}>
       <div className="relative overflow-hidden">
         {/* Course Image */}
-        <div className="aspect-video bg-gradient-muted relative">
-          {course.photo_url ? (
-            <img 
-              src={course.photo_url} 
-              alt={course.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground text-lg font-semibold">
-                {course.title.charAt(0)}
-              </span>
-            </div>
-          )}
-        </div>
+        <CourseImage title={course.title} photoUrl={course.photo_url} />
 
         {/* Wishlist Button */}
         {showWishlist && (
@@ -90,11 +75,7 @@ export function CourseCard({
           <div className="flex items-center gap-1 text-sm">
             <span className="text-muted-foreground">by</span>
             <span className="font-medium text-primary">
-              {teacherLoading ? (
-                <span className="bg-muted animate-pulse rounded w-20 h-4 inline-block" />
-              ) : (
-                getTeacherDisplayName(teacherInfo)
-              )}
+              <TeacherName teacherId={course.teacherId} skeletonWidthClass="w-20" />
             </span>
           </div>
 
@@ -132,6 +113,29 @@ export function CourseCard({
         </Button>
       </CardFooter>
     </Card>
+  );
+}
+
+function CourseImage({ title, photoUrl }: { title: string; photoUrl?: string }) {
+  const [imgError, setImgError] = useState(false);
+  const showFallbackInitial = !photoUrl || imgError;
+  return (
+    <div className="aspect-video bg-gradient-muted relative">
+      {showFallbackInitial ? (
+        <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
+          <span className="text-primary-foreground text-lg font-semibold">
+            {title?.charAt(0) || "?"}
+          </span>
+        </div>
+      ) : (
+        <img
+          src={photoUrl}
+          alt={title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={() => setImgError(true)}
+        />
+      )}
+    </div>
   );
 }
 

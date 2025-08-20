@@ -301,7 +301,13 @@ export class ApiClient {
   }
 
   async getTeacherById(teacherId: string): Promise<TeacherInfo> {
-    return this.request(`/api/teacher/${teacherId}/info`);
+    // Base URL already includes "/api"
+    return this.request(`/teacher/${teacherId}/info`);
+  }
+
+  async getTeacherProfile(teacherId: string): Promise<TeacherProfile> {
+    // Base URL already includes "/api"
+    return this.request(`/teacher/${teacherId}/profile`);
   }
 
   async getTeacherCourses(): Promise<Course[]> {
@@ -565,4 +571,17 @@ export interface TeacherInfo {
   id: number;
   firstName: string;
   lastName: string;
+}
+
+export interface TeacherProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  speciality: string;
+  experienceYears: number;
+  bio: string;
+  socialLink: string[];
+  skills: string[];
+  hireDate: string;
+  teacherPhoto?: string;
 }

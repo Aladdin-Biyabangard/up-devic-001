@@ -11,6 +11,11 @@ export function useTeacherInfo(teacherId: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // reset state for new teacherId
+    setLoading(true);
+    setError(null);
+    setTeacherInfo(null);
+
     if (!teacherId) {
       setLoading(false);
       return;
@@ -60,6 +65,6 @@ export function useTeacherInfo(teacherId: string) {
 
 // Utility function to get teacher display name
 export function getTeacherDisplayName(teacherInfo: TeacherInfo | null): string {
-  if (!teacherInfo) return 'Loading...';
+  if (!teacherInfo) return 'Unknown Teacher';
   return `${teacherInfo.firstName} ${teacherInfo.lastName}`.trim();
 }

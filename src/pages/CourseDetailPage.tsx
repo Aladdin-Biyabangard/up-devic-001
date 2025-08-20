@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
 import { Star, Share2, Heart, Users, GraduationCap, BookOpen, CalendarDays, DollarSign, ArrowLeft, ArrowRight } from "lucide-react";
+import { useTeacherInfo, getTeacherDisplayName } from "@/hooks/use-teacher-cache";
+import TeacherName from "@/components/teacher/TeacherName";
 
 type CourseDetail = {
   photo_url: string;
@@ -164,6 +166,14 @@ const CourseDetailPage = () => {
 
   const bannerUrl = course?.photo_url;
 
+  // Resolve teacher identifiers from potentially different shapes
+  const mainTeacherId: string | undefined = (course?.teacherId || course?.headTeacherId || course?.headTeacher?.id) as string | undefined;
+  const { teacherInfo: mainTeacherInfo, loading: isMainTeacherLoading } = useTeacherInfo(mainTeacherId || "");
+
+  // Helper to normalize teachers array into displayable entries
+  type TeacherEntry = { id?: string | number; firstName?: string; lastName?: string } | string | number;
+  const teacherEntries: TeacherEntry[] = Array.isArray(course?.teachers) ? (course?.teachers as TeacherEntry[]) : [];
+
   return (
     <div className="min-h-screen">
       {/* Banner */}
@@ -173,7 +183,7 @@ const CourseDetailPage = () => {
             <LoadingSpinner size="lg" />
           </div>
         ) : bannerUrl ? (
-          <img src={bannerUrl} alt={course?.title || "Course banner"} className="w-full h-full object-cover" />
+          <img src={bannerUrl} alt={course?.title || "Course banner"} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }} />
         ) : (
           <div className="w-full h-full bg-gradient-to-r from-primary/20 to-secondary/20" />
         )}
@@ -266,25 +276,59 @@ const CourseDetailPage = () => {
               <CardContent>
                 <div className="mb-4">
                   <div className="text-sm text-muted-foreground">Head Teacher</div>
-                  <div className="mt-2 flex items-center gap-3">
+                  <div
+                    className="mt-2 flex items-center gap-3 hover:bg-accent/40 p-2 rounded cursor-pointer"
+                    onClick={() => mainTeacherId && navigate(`/teachers/${String(mainTeacherId)}`)}
+                    role={mainTeacherId ? "link" : undefined}
+                    aria-label={mainTeacherId ? "View teacher profile" : undefined}
+                  >
                     <Avatar className="h-10 w-10">
-                      <AvatarFallback>{initialAvatar(course?.headTeacher)}</AvatarFallback>
+                      <AvatarFallback>{initialAvatar(isMainTeacherLoading ? undefined : getTeacherDisplayName(mainTeacherInfo))}</AvatarFallback>
                     </Avatar>
-                    <div className="font-medium">{course?.headTeacher}</div>
+                    <div className="font-medium">
+                      {isMainTeacherLoading ? (
+                        <span className="bg-muted animate-pulse rounded w-28 h-4 inline-block" />
+                      ) : (
+                        getTeacherDisplayName(mainTeacherInfo)
+                      )}
+                    </div>
                   </div>
                 </div>
                 <Separator className="my-4" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {(course?.teachers || []).map((t, idx) => (
-                    <Card key={idx} className="p-4 hover:shadow-lg transition-shadow">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback>{initialAvatar(t)}</AvatarFallback>
-                        </Avatar>
-                        <div className="text-sm font-medium">{t}</div>
-                      </div>
-                    </Card>
-                  ))}
+                  {teacherEntries.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">No additional teachers.</div>
+                  ) : (
+                    teacherEntries.map((entry, idx) => {
+                      const id = typeof entry === 'object' && entry ? (entry as any).id : entry;
+                      const firstName = typeof entry === 'object' && entry && (entry as any).firstName;
+                      const lastName = typeof entry === 'object' && entry && (entry as any).lastName;
+                      const nameProvided = firstName && lastName;
+                      const displayName = nameProvided ? `${firstName} ${lastName}`.trim() : undefined;
+                      return (
+                        <Card
+                          key={idx}
+                          className="p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                          onClick={() => (id != null) && navigate(`/teachers/${String(id)}`)}
+                          role={(id != null) ? "link" : undefined}
+                          aria-label={(id != null) ? "View teacher profile" : undefined}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarFallback>{initialAvatar(displayName)}</AvatarFallback>
+                            </Avatar>
+                            <div className="text-sm font-medium">
+                              {nameProvided ? (
+                                displayName
+                              ) : (
+                                <TeacherName teacherId={id as any} skeletonWidthClass="w-24" />
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })
+                  )}
                 </div>
               </CardContent>
             </Card>
