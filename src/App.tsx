@@ -18,13 +18,13 @@ import LessonPage from "./pages/LessonPage";
 import TeacherPanelPage from "./pages/TeacherPanelPage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import StudentPanelPage from "./pages/StudentPanelPage";
-import ProfilePage from "./pages/ProfilePage";
 import WishlistPage from "./pages/WishlistPage";
 import DashboardPage from "./pages/DashboardPage";
 import TeacherProfilePage from "./pages/TeacherProfilePage";
 import OtpVerificationPage from "./pages/OtpVerificationPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import PaymentStatusPage from "./pages/PaymentStatusPage";
+import { TeacherProfile } from "./components/teacher/TeacherProfile";
 
 const queryClient = new QueryClient();
 
@@ -70,7 +70,7 @@ const AppContent = () => {
           <Route path="/student" element={<StudentPanelPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/admin" element={<AdminRoute user={user} />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<TeacherProfile />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/auth" element={<AuthPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

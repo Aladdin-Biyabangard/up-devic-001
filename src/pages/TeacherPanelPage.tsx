@@ -19,7 +19,6 @@ import {
 import { TeacherDashboard } from "@/components/teacher/TeacherDashboard";
 import { CourseManagement } from "@/components/teacher/CourseManagement";
 import { LessonManagement } from "@/components/teacher/LessonManagement";
-import { TeacherProfile } from "@/components/teacher/TeacherProfile";
 
 export default function TeacherPanelPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -56,10 +55,6 @@ export default function TeacherPanelPage() {
               <PlayCircle className="h-4 w-4" />
               <span className="hidden sm:inline">Lessons</span>
             </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Profile</span>
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -74,9 +69,6 @@ export default function TeacherPanelPage() {
             <LessonManagement />
           </TabsContent>
 
-          <TabsContent value="profile" className="space-y-6">
-            <TeacherProfile />
-          </TabsContent>
         </Tabs>
       </div>
     </div>

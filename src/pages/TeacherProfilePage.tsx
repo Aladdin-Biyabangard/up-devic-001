@@ -18,9 +18,16 @@ export default function TeacherProfilePage() {
   const { teacherId = "" } = useParams();
   const navigate = useNavigate();
 
-  const { data, isLoading, isError, error } = useQuery<TeacherProfile>({
+  const { data, isLoading, isError, error } = useQuery<TeacherProfile, Error>({
     queryKey: ["teacher-profile", teacherId],
     queryFn: () => api.getTeacherProfile(teacherId!),
+    enabled: Boolean(teacherId),
+    staleTime: 60_000,
+  });
+
+  const { data: teacherCourses, isLoading: isCoursesLoading } = useQuery<Course[]>({
+    queryKey: ["teacher-courses", teacherId],
+    queryFn: () => api.getTeacherCourses(),
     enabled: Boolean(teacherId),
     staleTime: 60_000,
   });
@@ -43,7 +50,7 @@ export default function TeacherProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="text-sm text-muted-foreground">
-              {(error as any)?.message || "Please try again later."}
+              {error?.message || "Please try again later."}
             </div>
           </CardContent>
         </Card>
@@ -53,11 +60,6 @@ export default function TeacherProfilePage() {
 
   const fullName = `${data.firstName} ${data.lastName}`.trim();
 
-  const { data: teacherCourses, isLoading: isCoursesLoading } = useQuery<Course[]>({
-    queryKey: ["teacher-courses", teacherId],
-    queryFn: () => api.getTeacherCourses(),
-    staleTime: 60_000,
-  });
 
   return (
     <>
