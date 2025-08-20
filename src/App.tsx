@@ -22,6 +22,9 @@ import ProfilePage from "./pages/ProfilePage";
 import WishlistPage from "./pages/WishlistPage";
 import DashboardPage from "./pages/DashboardPage";
 import TeacherProfilePage from "./pages/TeacherProfilePage";
+import OtpVerificationPage from "./pages/OtpVerificationPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import PaymentStatusPage from "./pages/PaymentStatusPage";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +63,9 @@ const AppContent = () => {
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
           <Route path="/lessons/:lessonId" element={<LessonPage />} />
           <Route path="/teachers/:teacherId" element={<TeacherProfilePage />} />
+          <Route path="/verify-otp" element={<OtpVerificationPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/payment/status" element={<PaymentStatusPage />} />
           <Route path="/teacher" element={<TeacherPanelPage />} />
           <Route path="/student" element={<StudentPanelPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />

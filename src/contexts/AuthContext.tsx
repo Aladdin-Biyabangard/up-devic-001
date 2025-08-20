@@ -152,9 +152,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     lastName: string;
   }) => {
     try {
+      // Call sign-up API. Do NOT auto-login; OTP verification completes the flow
       await api.register(userData);
-      // After successful registration, automatically log in
-      await login(userData.email, userData.password);
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;

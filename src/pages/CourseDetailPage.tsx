@@ -152,10 +152,17 @@ const CourseDetailPage = () => {
 
   const handleEnroll = async () => {
     try {
-      await api.checkout(courseId!);
-      alert("Enrollment started. You'll be redirected to payment if applicable.");
-    } catch (e) {
-      alert("Failed to start enrollment. Please try again.");
+      if (!course) throw new Error('Course not loaded');
+      const amount = Number(course.price || 0);
+      const description = `Payment for course: ${course.title}`;
+      const res = await api.initiatePayment({ amount, courseId: courseId!, description });
+      if (res && res.sessionUrl) {
+        window.location.href = res.sessionUrl;
+      } else {
+        alert(res?.message || 'Failed to initiate payment.');
+      }
+    } catch (e: any) {
+      alert(e?.message || "Failed to start payment. Please try again.");
     }
   };
 

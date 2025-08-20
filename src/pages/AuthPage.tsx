@@ -89,10 +89,10 @@ export default function AuthPage() {
 
       toast({
         title: "Registration successful!",
-        description: "You have been automatically signed in.",
+        description: "Please verify your email with the OTP code.",
       });
 
-      navigate("/");
+      navigate(`/verify-otp?email=${encodeURIComponent(formData.email)}`, { state: { email: formData.email } });
     } catch (error) {
       toast({
         title: "Registration failed",
@@ -191,7 +191,7 @@ export default function AuthPage() {
 
                   <div className="text-right">
                     <Link
-                      to="/auth/forgot-password"
+                      to="/forgot-password"
                       className="text-sm text-primary hover:underline"
                     >
                       Forgot password?

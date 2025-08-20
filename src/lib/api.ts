@@ -221,6 +221,20 @@ export class ApiClient {
     });
   }
 
+  async verifyOtp(payload: { email: string; otpCode: number }): Promise<any> {
+    return this.request("/v1/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const query = `?email=${encodeURIComponent(email)}`;
+    await this.request(`/v1/auth/forgot-password${query}`, {
+      method: "POST",
+    });
+  }
+
   async refreshToken(refreshToken: string): Promise<any> {
     return this.request("/v1/auth/refresh", {
       method: "POST",
@@ -343,6 +357,23 @@ export class ApiClient {
       method: "POST",
       body: JSON.stringify({ courseId }),
     });
+  }
+
+  // New payment flow
+  async initiatePayment(payload: { amount: number; courseId: string; description: string }): Promise<PaymentInitResponse> {
+    return this.request("/v1/payment", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async verifyPaymentSuccess(courseId: string): Promise<{ status: string; message?: string }> {
+    const query = `?courseId=${encodeURIComponent(courseId)}`;
+    return this.request(`/v1/payment/success${query}`);
+  }
+
+  async paymentCancel(): Promise<{ status: string; message?: string }> {
+    return this.request(`/v1/payment/cancel`);
   }
 
   // Teacher Course Management
@@ -584,4 +615,12 @@ export interface TeacherProfile {
   skills: string[];
   hireDate: string;
   teacherPhoto?: string;
+}
+
+export interface PaymentInitResponse {
+  status: string;
+  message?: string;
+  courseId: string;
+  sessionId: string;
+  sessionUrl: string;
 }
