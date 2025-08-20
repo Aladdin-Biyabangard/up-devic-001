@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,62 +26,23 @@ import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 interface Lesson {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  duration: string;
-  courseId: number;
+  duration?: string;
+  courseId: string;
   courseName: string;
-  order: number;
-  videoUrl?: string;
-  materials?: string[];
-  isPublished: boolean;
+  order?: number;
+  photoUrl?: string;
 }
 
-interface Course {
-  id: number;
-  title: string;
-}
+interface Course { courseId: string; title: string }
 
 export function LessonManagement() {
   const { toast } = useToast();
-  const [lessons, setLessons] = useState<Lesson[]>([
-    {
-      id: 1,
-      title: "Introduction to React",
-      description: "Learn the basics of React components",
-      duration: "15:30",
-      courseId: 1,
-      courseName: "React Fundamentals",
-      order: 1,
-      videoUrl: "https://example.com/video1",
-      materials: ["slides.pdf", "code-examples.zip"],
-      isPublished: true
-    },
-    {
-      id: 2,
-      title: "JSX and Props",
-      description: "Understanding JSX syntax and component props",
-      duration: "22:45",
-      courseId: 1,
-      courseName: "React Fundamentals",
-      order: 2,
-      videoUrl: "https://example.com/video2",
-      materials: ["jsx-guide.pdf"],
-      isPublished: true
-    },
-    {
-      id: 3,
-      title: "ES6 Fundamentals",
-      description: "Modern JavaScript features",
-      duration: "18:20",
-      courseId: 2,
-      courseName: "JavaScript Advanced",
-      order: 1,
-      materials: ["es6-cheatsheet.pdf"],
-      isPublished: false
-    }
-  ]);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loadingLessons, setLoadingLessons] = useState<boolean>(false);
+  const [mutating, setMutating] = useState<boolean>(false);
 
   const courseListQuery = useQuery({
     queryKey: ["teacher-courses-simple"],
@@ -88,6 +50,39 @@ export function LessonManagement() {
     staleTime: 60_000,
   });
   const courseList = courseListQuery.data as any[] | undefined;
+
+  // Load lessons for teacher courses
+  useEffect(() => {
+    const load = async () => {
+      if (!courseList || courseList.length === 0) return;
+      setLoadingLessons(true);
+      try {
+        const all: Lesson[] = [];
+        for (const c of courseList) {
+          try {
+            const items = await api.getLessonsByCourse(String(c.courseId));
+            const mapped = (items || []).map((li: any) => ({
+              id: String(li.lessonId ?? li.id ?? ""),
+              title: li.title,
+              description: li.description,
+              duration: li.duration,
+              order: li.order,
+              photoUrl: li.photoUrl,
+              courseId: String(c.courseId),
+              courseName: c.title,
+            })) as Lesson[];
+            all.push(...mapped);
+          } catch {}
+        }
+        setLessons(all);
+      } catch (e: any) {
+        toast({ title: "Failed to load lessons", description: e?.message, variant: "destructive" as any });
+      } finally {
+        setLoadingLessons(false);
+      }
+    };
+    load();
+  }, [courseList]);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
@@ -114,6 +109,7 @@ export function LessonManagement() {
     try {
       const selected = (courseList || []).find((c: any) => String(c.courseId) === newLesson.courseId);
       if (!selected) return;
+      setMutating(true);
       await api.createLesson(String(selected.courseId), {
         title: newLesson.title,
         description: newLesson.description,
@@ -122,18 +118,36 @@ export function LessonManagement() {
       toast({ title: "Lesson created" });
       setNewLesson({ title: "", description: "", duration: "", courseId: "", videoFile: null, materials: [] });
       setIsCreateModalOpen(false);
+      // Refresh lessons for this course only
+      const items = await api.getLessonsByCourse(String(selected.courseId));
+      const mapped = (items || []).map((li: any) => ({
+        id: String(li.lessonId ?? li.id ?? ""),
+        title: li.title,
+        description: li.description,
+        duration: li.duration,
+        order: li.order,
+        photoUrl: li.photoUrl,
+        courseId: String(selected.courseId),
+        courseName: selected.title,
+      })) as Lesson[];
+      setLessons((prev) => [...prev.filter(l => l.courseId !== String(selected.courseId)), ...mapped]);
     } catch (e: any) {
       toast({ title: "Failed to create lesson", description: e?.message, variant: "destructive" as any });
+    } finally {
+      setMutating(false);
     }
   };
 
-  const handleDeleteLesson = async (id: number) => {
+  const handleDeleteLesson = async (id: string) => {
     try {
+      setMutating(true);
       await api.deleteLesson(String(id));
       toast({ title: "Lesson deleted" });
       setLessons(lessons.filter(lesson => lesson.id !== id));
     } catch (e: any) {
       toast({ title: "Failed to delete", description: e?.message, variant: "destructive" as any });
+    } finally {
+      setMutating(false);
     }
   };
 
@@ -144,23 +158,57 @@ export function LessonManagement() {
   const handleUpdateLesson = async () => {
     if (!editingLesson) return;
     try {
+      setMutating(true);
       await api.updateLesson(String(editingLesson.id), {
         title: editingLesson.title,
         description: editingLesson.description,
       });
       toast({ title: "Lesson updated" });
       setEditingLesson(null);
+      setLessons((prev) => prev.map(l => l.id === editingLesson.id ? { ...l, title: editingLesson.title, description: editingLesson.description } : l));
     } catch (e: any) {
       toast({ title: "Failed to update", description: e?.message, variant: "destructive" as any });
+    } finally {
+      setMutating(false);
     }
   };
 
-  const togglePublishStatus = (lessonId: number) => {
-    setLessons(lessons.map(lesson => 
-      lesson.id === lessonId 
-        ? { ...lesson, isPublished: !lesson.isPublished }
-        : lesson
-    ));
+  // Photo upload handling
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const [photoUploadLessonId, setPhotoUploadLessonId] = useState<string | null>(null);
+  const triggerPhotoUpload = (lessonId: string) => {
+    setPhotoUploadLessonId(lessonId);
+    photoInputRef.current?.click();
+  };
+  const onPhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !photoUploadLessonId) return;
+    try {
+      setMutating(true);
+      await api.uploadLessonPhoto(String(photoUploadLessonId), file);
+      toast({ title: "Lesson photo updated" });
+      const lesson = lessons.find(l => l.id === photoUploadLessonId);
+      if (lesson) {
+        const items = await api.getLessonsByCourse(String(lesson.courseId));
+        const mapped = (items || []).map((li: any) => ({
+          id: String(li.lessonId ?? li.id ?? ""),
+          title: li.title,
+          description: li.description,
+          duration: li.duration,
+          order: li.order,
+          photoUrl: li.photoUrl,
+          courseId: String(lesson.courseId),
+          courseName: lesson.courseName,
+        })) as Lesson[];
+        setLessons((prev) => [...prev.filter(l => l.courseId !== String(lesson.courseId)), ...mapped]);
+      }
+    } catch (e: any) {
+      toast({ title: "Failed to upload photo", description: e?.message, variant: "destructive" as any });
+    } finally {
+      setMutating(false);
+      setPhotoUploadLessonId(null);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
   };
 
   return (
@@ -178,15 +226,15 @@ export function LessonManagement() {
               Add Lesson
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[640px] max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Lesson</DialogTitle>
               <DialogDescription>
                 Add a new lesson to your course
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
+            <div className="grid gap-4 py-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="course-select">Course</Label>
                 <Select onValueChange={(value) => setNewLesson({...newLesson, courseId: value})}>
                   <SelectTrigger>
@@ -210,7 +258,7 @@ export function LessonManagement() {
                   placeholder="Enter lesson title"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="lesson-description">Description</Label>
                 <Textarea
                   id="lesson-description"
@@ -229,10 +277,10 @@ export function LessonManagement() {
                   placeholder="15:30"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label>Video Upload</Label>
                 <div
-                  className="border-2 border-dashed border-border rounded-lg p-6 text-center"
+                  className="w-full border-2 border-dashed border-border rounded-lg p-6 text-center"
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
@@ -246,12 +294,12 @@ export function LessonManagement() {
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Video
                   </Button>
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <p className="text-sm text-muted-foreground mt-2 break-words">
                     MP4, MOV up to 500MB {newLesson.videoFile ? `• Selected: ${newLesson.videoFile.name}` : ""}
                   </p>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label>Course Materials</Label>
                 <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                   <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
@@ -269,8 +317,15 @@ export function LessonManagement() {
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateLesson}>
-                Create Lesson
+              <Button onClick={handleCreateLesson} disabled={mutating}>
+                {mutating ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create Lesson"
+                )}
               </Button>
             </div>
           </DialogContent>

@@ -1,12 +1,12 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { api, TeacherProfile } from "@/lib/api";
+import { api, TeacherProfile, Course } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Mail, Briefcase, CalendarDays, Award, Link2 } from "lucide-react";
+import { Mail, Briefcase, CalendarDays, Award, Link2, Star } from "lucide-react";
 
 const formatDate = (iso?: string) => {
   if (!iso) return "";
@@ -16,6 +16,7 @@ const formatDate = (iso?: string) => {
 
 export default function TeacherProfilePage() {
   const { teacherId = "" } = useParams();
+  const navigate = useNavigate();
 
   const { data, isLoading, isError, error } = useQuery<TeacherProfile>({
     queryKey: ["teacher-profile", teacherId],
@@ -52,7 +53,14 @@ export default function TeacherProfilePage() {
 
   const fullName = `${data.firstName} ${data.lastName}`.trim();
 
+  const { data: teacherCourses, isLoading: isCoursesLoading } = useQuery<Course[]>({
+    queryKey: ["teacher-courses", teacherId],
+    queryFn: () => api.getTeacherCourses(),
+    staleTime: 60_000,
+  });
+
   return (
+    <>
     <div className="container mx-auto max-w-5xl px-4 py-10">
       <Card className="shadow-xl">
         <CardHeader className="pb-0">
@@ -135,6 +143,57 @@ export default function TeacherProfilePage() {
         </CardContent>
       </Card>
     </div>
+
+      {/* Teacher Courses */}
+      <div className="container mx-auto max-w-5xl px-4 pt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold">Courses by {data.firstName}</h3>
+        </div>
+
+        {isCoursesLoading ? (
+          <div className="py-6 text-center text-muted-foreground">Loading courses...</div>
+        ) : (teacherCourses || []).length === 0 ? (
+          <div className="py-6 text-center text-muted-foreground">No courses to display.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {(teacherCourses || []).map((course) => (
+              <button
+                key={course.courseId}
+                onClick={() => navigate(`/courses/${course.courseId}`)}
+                className="text-left group rounded-lg border bg-card hover:shadow-md transition-all overflow-hidden"
+              >
+                {course.photo_url ? (
+                  <img
+                    src={course.photo_url}
+                    alt={course.title}
+                    className="w-full h-24 object-cover group-hover:scale-[1.02] transition-transform"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+                  />
+                ) : (
+                  <div className="w-full h-24 bg-muted flex items-center justify-center text-lg font-semibold">
+                    {course.title?.charAt(0) || "?"}
+                  </div>
+                )}
+                <div className="p-3 space-y-2">
+                  <div className="text-sm font-semibold line-clamp-1">{course.title}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] px-2 py-[2px] rounded-full bg-muted">{course.category || "Uncategorized"}</span>
+                    <span className="text-[11px] px-2 py-[2px] rounded-full border">{(course as any).level || "LEVEL -"}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
+                      <span>{Number(course.rating || 0).toFixed(1)}</span>
+                    </div>
+                    <div className="text-sm font-semibold text-foreground">${Number(course.price || 0).toFixed(2)}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      </>
   );
 }
 

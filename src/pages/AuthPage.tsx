@@ -53,11 +53,10 @@ export default function AuthPage() {
       });
       const rolesRaw = localStorage.getItem('auth_roles');
       const roles: string[] = rolesRaw ? JSON.parse(rolesRaw) : [];
-      if (roles.includes('ADMIN')) {
-        navigate('/admin');
-      } else if (roles.includes('TEACHER')) {
-        navigate('/teacher');
+      if (roles.includes('STUDENT')) {
+        navigate('/student');
       } else {
+        // For TEACHER / ADMIN (and others), go to home so the role-based buttons are shown
         navigate('/');
       }
     } catch (error) {

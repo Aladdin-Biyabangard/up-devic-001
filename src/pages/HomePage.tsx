@@ -110,17 +110,6 @@ export default function HomePage() {
               <Link to="/auth?mode=register">Get Started Free</Link>
             </Button>
             
-            {/* Role-based Panel Buttons */}
-            {user && roles?.includes('STUDENT') && (
-              <Button
-                size="lg"
-                onClick={() => navigate('/student')}
-                className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400 rounded-full px-6"
-              >
-                Student Panel
-              </Button>
-            )}
-            
             {user && roles?.includes('TEACHER') && (
               <Button
                 size="lg"
@@ -131,7 +120,7 @@ export default function HomePage() {
               </Button>
             )}
             
-            {user?.role?.includes?.('ADMIN') && (
+            {user && roles?.includes('ADMIN') && (
               <Button
                 size="lg"
                 onClick={() => navigate('/admin')}
