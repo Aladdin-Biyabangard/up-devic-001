@@ -110,7 +110,7 @@ export default function HomePage() {
               <Link to="/auth?mode=register">Get Started Free</Link>
             </Button>
             
-            {user && roles?.includes('TEACHER') && (
+            {user && roles?.includes('ROLE_TEACHER') && (
               <Button
                 size="lg"
                 onClick={() => navigate('/teacher')}
@@ -120,7 +120,7 @@ export default function HomePage() {
               </Button>
             )}
             
-            {user && roles?.includes('ADMIN') && (
+            {user && roles?.includes('ROLE_ADMIN') && (
               <Button
                 size="lg"
                 onClick={() => navigate('/admin')}

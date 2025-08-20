@@ -129,7 +129,7 @@ export function CourseManagement() {
     try {
       setIsAssignOpen(courseId);
       // Prefer admin endpoint to list teachers
-      const list = await api.getUsersByRole("TEACHER");
+      const list = await api.getUsersByRole("ROLE_TEACHER");
       setTeachers(Array.isArray(list) ? list : []);
       setSelectedTeacherId("");
     } catch (e: any) {

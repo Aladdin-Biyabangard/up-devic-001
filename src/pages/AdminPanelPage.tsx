@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, UserPlus, UserMinus, Trash2, Shield, ShieldOff, Users, UserCheck, UserX } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-type UserRole = 'ADMIN' | 'TEACHER' | 'STUDENT';
+type UserRole = 'ROLE_ADMIN' | 'ROLE_TEACHER' | 'ROLE_STUDENT';
 type UserStatus = 'ACTIVE' | 'INACTIVE';
 
 const AdminPanelPage = () => {
@@ -29,7 +29,7 @@ const AdminPanelPage = () => {
   const [selectedRole, setSelectedRole] = useState<string>("ALL");
   const [userCount, setUserCount] = useState(0);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [newRole, setNewRole] = useState<UserRole>("STUDENT");
+  const [newRole, setNewRole] = useState<UserRole>("ROLE_STUDENT");
   const [teacherEmail, setTeacherEmail] = useState("");
 
   const roles: string[] = (user as any)?.roles || [];
@@ -41,7 +41,7 @@ const AdminPanelPage = () => {
       return;
     }
     
-    if (!roles.includes('ADMIN')) {
+    if (!roles.includes('ROLE_ADMIN')) {
       navigate("/");
       return;
     }
@@ -49,7 +49,7 @@ const AdminPanelPage = () => {
 
   // Load initial data
   useEffect(() => {
-    if (isAuthenticated && roles.includes('ADMIN')) {
+    if (isAuthenticated && roles.includes('ROLE_ADMIN')) {
       loadUsers();
       loadUserCount();
     }
@@ -69,7 +69,7 @@ const AdminPanelPage = () => {
     
     if (selectedRole !== "ALL") {
       filtered = filtered.filter(u => 
-        u.roles?.includes(selectedRole as "USER" | "STUDENT" | "TEACHER" | "ADMIN") || u.role === selectedRole
+        u.roles?.includes(selectedRole as "ROLE_USER" | "ROLE_STUDENT" | "ROLE_TEACHER" | "ROLE_ADMIN") || u.role === selectedRole
       );
     }
     
@@ -223,9 +223,9 @@ const AdminPanelPage = () => {
 
   const getRoleColor = (role: string): "default" | "secondary" | "destructive" => {
     switch (role) {
-      case 'ADMIN': return 'destructive';
-      case 'TEACHER': return 'secondary';
-      case 'STUDENT': return 'default';
+      case 'ROLE_ADMIN': return 'destructive';
+      case 'ROLE_TEACHER': return 'secondary';
+      case 'ROLE_STUDENT': return 'default';
       default: return 'default';
     }
   };
@@ -242,7 +242,7 @@ const AdminPanelPage = () => {
     return user.roles || (user.role ? [user.role] : []);
   };
 
-  if (!isAuthenticated || !roles.includes('ADMIN')) {
+  if (!isAuthenticated || !roles.includes('ROLE_ADMIN')) {
     return null;
   }
 
@@ -290,7 +290,7 @@ const AdminPanelPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {users.filter(u => getUserRoles(u).includes('TEACHER')).length}
+              {users.filter(u => getUserRoles(u).includes('ROLE_TEACHER')).length}
             </div>
           </CardContent>
         </Card>
@@ -301,7 +301,7 @@ const AdminPanelPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {users.filter(u => getUserRoles(u).includes('STUDENT')).length}
+              {users.filter(u => getUserRoles(u).includes('ROLE_STUDENT')).length}
             </div>
           </CardContent>
         </Card>
@@ -329,9 +329,9 @@ const AdminPanelPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All Roles</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="TEACHER">Teacher</SelectItem>
-                <SelectItem value="STUDENT">Student</SelectItem>
+                <SelectItem value="ROLE_ADMIN">Admin</SelectItem>
+                <SelectItem value="ROLE_TEACHER">Teacher</SelectItem>
+                <SelectItem value="ROLE_STUDENT">Student</SelectItem>
               </SelectContent>
             </Select>
             <Dialog>
@@ -429,9 +429,9 @@ const AdminPanelPage = () => {
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="STUDENT">Student</SelectItem>
-                                    <SelectItem value="TEACHER">Teacher</SelectItem>
-                                    <SelectItem value="ADMIN">Admin</SelectItem>
+                                    <SelectItem value="ROLE_STUDENT">Student</SelectItem>
+                                    <SelectItem value="ROLE_TEACHER">Teacher</SelectItem>
+                                    <SelectItem value="ROLE_ADMIN">Admin</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <Button

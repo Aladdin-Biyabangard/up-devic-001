@@ -5,7 +5,7 @@ import { api, TeacherInfo } from '@/lib/api';
 const teacherCache = new Map<string, TeacherInfo>();
 const teacherPromises = new Map<string, Promise<TeacherInfo>>();
 
-export function useTeacherInfo(teacherId: string) {
+export function useTeacherInfo(teacherId: number) {
   const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

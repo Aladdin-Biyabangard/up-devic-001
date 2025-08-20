@@ -100,10 +100,11 @@ const App = () => {
 export default App;
 
 function AdminRoute({ user }: { user: any }) {
+  console.log(user)
   const roles: string[] = Array.isArray(user?.role)
     ? (user?.role as string[])
     : ((user as any)?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
-  if (!user || !roles.includes('ADMIN')) {
+  if (!user || !roles.includes('ROLE_ADMIN')) {
     return <Navigate to="/auth" replace />;
   }
   return <AdminPanelPage />;

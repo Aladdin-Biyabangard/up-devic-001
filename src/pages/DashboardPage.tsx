@@ -13,9 +13,9 @@ export default function DashboardPage() {
 	const roles: string[] = Array.isArray(user?.role)
 		? (user?.role as string[])
 		: ((user as any)?.roles || JSON.parse(localStorage.getItem("auth_roles") || "[]"));
-	const isStudent = roles.includes("STUDENT");
-	const isTeacher = roles.includes("TEACHER");
-	const isAdmin = roles.includes("ADMIN");
+	const isStudent = roles.includes("ROLE_STUDENT");
+	const isTeacher = roles.includes("ROLE_TEACHER");
+	const isAdmin = roles.includes("ROLE_ADMIN");
 
 	const [studentCourses, setStudentCourses] = useState<any[]>([]);
 	const [teacherCourses, setTeacherCourses] = useState<Course[]>([]);
@@ -76,7 +76,7 @@ export default function DashboardPage() {
 							<span className="text-muted-foreground">No roles assigned</span>
 						) : (
 							roles.map((r) => (
-								<Badge key={r} variant={r === "ADMIN" ? "destructive" : r === "TEACHER" ? "default" : "secondary"}>
+								<Badge key={r} variant={r === "ROLE_ADMIN" ? "destructive" : r === "ROLE_TEACHER" ? "default" : "secondary"}>
 									{r}
 								</Badge>
 							))

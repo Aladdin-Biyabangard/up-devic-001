@@ -18,7 +18,7 @@ interface NavigationItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  role?: 'STUDENT' | 'TEACHER' | 'ADMIN';
+  role?: 'ROLE_STUDENT' | 'ROLE_TEACHER' | 'ROLE_ADMIN';
 }
 
 const navigationItems: NavigationItem[] = [
@@ -26,13 +26,13 @@ const navigationItems: NavigationItem[] = [
   { label: "Courses", href: "/courses", icon: BookOpen },
   { label: "Teachers", href: "/teachers", icon: GraduationCap },
   { label: "Dashboard", href: "/dashboard", icon: User },
-  { label: "My Courses", href: "/my-courses", icon: BookOpen, role: 'STUDENT' },
-  { label: "Wishlist", href: "/wishlist", icon: Heart, role: 'STUDENT' },
-  { label: "Teacher Portal", href: "/teacher", icon: GraduationCap, role: 'TEACHER' },
-  { label: "Analytics", href: "/teacher/analytics", icon: BarChart3, role: 'TEACHER' },
-  { label: "Payments", href: "/teacher/payments", icon: CreditCard, role: 'TEACHER' },
-  { label: "Admin Panel", href: "/admin", icon: Settings, role: 'ADMIN' },
-  { label: "User Management", href: "/admin/users", icon: Users, role: 'ADMIN' },
+  { label: "My Courses", href: "/my-courses", icon: BookOpen, role: 'ROLE_STUDENT' },
+  { label: "Wishlist", href: "/wishlist", icon: Heart, role: 'ROLE_STUDENT' },
+  { label: "Teacher Portal", href: "/teacher", icon: GraduationCap, role: 'ROLE_TEACHER' },
+  { label: "Analytics", href: "/teacher/analytics", icon: BarChart3, role: 'ROLE_TEACHER' },
+  { label: "Payments", href: "/teacher/payments", icon: CreditCard, role: 'ROLE_TEACHER' },
+  { label: "Admin Panel", href: "/admin", icon: Settings, role: 'ROLE_ADMIN' },
+  { label: "User Management", href: "/admin/users", icon: Users, role: 'ROLE_ADMIN' },
 ];
 
 interface NavigationProps {
