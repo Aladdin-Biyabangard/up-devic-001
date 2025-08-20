@@ -319,7 +319,7 @@ export class ApiClient {
     return this.request(`/teacher/${teacherId}/info`);
   }
 
-  async getTeacherProfile(teacherId: string): Promise<TeacherProfile> {
+  async getTeacherProfile(teacherId: number): Promise<TeacherProfile> {
     // Base URL already includes "/api"
     return this.request(`/teacher/${teacherId}/profile`);
   }
