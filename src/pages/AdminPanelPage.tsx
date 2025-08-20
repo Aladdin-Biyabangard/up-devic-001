@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +26,8 @@ import {
   Plus,
   Filter,
   Home,
-  Settings
+  Settings,
+  Loader2
 } from "lucide-react";
 
 type UserRole = 'ADMIN' | 'TEACHER' | 'STUDENT';
@@ -42,6 +45,7 @@ interface User {
 const AdminPanelPage = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'roles'>('dashboard');
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,6 +53,7 @@ const AdminPanelPage = () => {
   const [teacherEmail, setTeacherEmail] = useState("");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
+  const [removingRoles, setRemovingRoles] = useState<Record<string, UserRole | null>>({});
 
   // Placeholder data for demonstration
   const placeholderUsers: User[] = [
@@ -102,7 +107,7 @@ const AdminPanelPage = () => {
     }
   ];
 
-  const [users] = useState<User[]>(placeholderUsers);
+  const [users, setUsers] = useState<User[]>(placeholderUsers);
 
   // Check authentication
   if (!isAuthenticated) {
@@ -139,6 +144,45 @@ const AdminPanelPage = () => {
     setShowSuccessMessage(true);
     setTeacherEmail("");
     setTimeout(() => setShowSuccessMessage(false), 3000);
+  };
+
+  // Handle removing user role
+  const handleRemoveRole = async (userId: string, role: UserRole) => {
+    try {
+      // Set loading state for this specific role removal
+      setRemovingRoles(prev => ({ ...prev, [userId]: role }));
+      
+      // Call the API to remove the role
+      await api.removeUserRole(userId, role);
+      
+      // Update the UI by removing the role from the user
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId 
+            ? { ...user, roles: user.roles.filter(r => r !== role) }
+            : user
+        )
+      );
+      
+      // Show success toast
+      toast({
+        title: "Success",
+        description: `${role} role removed successfully from ${users.find(u => u.id === userId)?.firstName} ${users.find(u => u.id === userId)?.lastName}`,
+      });
+      
+    } catch (error) {
+      console.error('Failed to remove role:', error);
+      
+      // Show error toast
+      toast({
+        title: "Error",
+        description: `Failed to remove ${role} role. Please try again.`,
+        variant: "destructive",
+      });
+    } finally {
+      // Clear loading state
+      setRemovingRoles(prev => ({ ...prev, [userId]: null }));
+    }
   };
 
   const getRoleColor = (role: UserRole): "default" | "secondary" | "destructive" => {
@@ -482,6 +526,7 @@ const AdminPanelPage = () => {
                                       size="sm"
                                       variant="outline"
                                       className="hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all duration-200 border-gray-300"
+                                      disabled={user.roles.length === 0}
                                     >
                                       <UserMinus className="h-3 w-3 mr-1" />
                                       Remove Role
@@ -495,15 +540,27 @@ const AdminPanelPage = () => {
                                       </DialogDescription>
                                     </DialogHeader>
                                     <div className="space-y-4">
-                                      {user.roles.map((role) => (
-                                        <Button
-                                          key={role}
-                                          variant="outline"
-                                          className="w-full justify-start hover:bg-red-50 hover:text-red-700 hover:border-red-300"
-                                        >
-                                          Remove {role}
-                                        </Button>
-                                      ))}
+                                      {user.roles.map((role) => {
+                                        const isRemoving = removingRoles[user.id] === role;
+                                        return (
+                                          <Button
+                                            key={role}
+                                            variant="outline"
+                                            onClick={() => handleRemoveRole(user.id, role)}
+                                            disabled={isRemoving}
+                                            className="w-full justify-start hover:bg-red-50 hover:text-red-700 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                          >
+                                            {isRemoving ? (
+                                              <>
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                Removing {role}...
+                                              </>
+                                            ) : (
+                                              `Remove ${role}`
+                                            )}
+                                          </Button>
+                                        );
+                                      })}
                                     </div>
                                   </DialogContent>
                                 </Dialog>
