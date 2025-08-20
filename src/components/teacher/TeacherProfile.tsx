@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,25 +23,98 @@ import {
   Eye,
   Edit
 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useToast } from "@/hooks/use-toast";
+
+type RawUserProfile = {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  profilePhoto_url?: string;
+  profileImageUrl?: string;
+  bio?: string;
+  socialLinks?: string[];
+  socialLink?: string[];
+  skills?: string[];
+  skill?: string[];
+  phone?: string;
+  location?: string;
+};
+
+type TeacherProfileView = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  location: string;
+  bio: string;
+  website: string;
+  linkedin: string;
+  twitter: string;
+  avatar: string | null;
+  specializations: string[];
+  hourlyRate: number;
+  totalStudents: number;
+  totalCourses: number;
+  averageRating: number;
+};
+
+function extractLinks(raw: string[] | undefined): { website: string; linkedin: string; twitter: string } {
+  const links = raw || [];
+  const linkedin = links.find((l) => typeof l === "string" && l.toLowerCase().includes("linkedin")) || "";
+  const twitter = links.find((l) => typeof l === "string" && (l.toLowerCase().includes("twitter") || l.startsWith("@"))) || "";
+  const website = links.find((l) => typeof l === "string" && !l.toLowerCase().includes("linkedin") && !l.toLowerCase().includes("twitter")) || links[0] || "";
+  return { website: website || "", linkedin: linkedin || "", twitter: twitter || "" };
+}
 
 export function TeacherProfile() {
-  const [profile, setProfile] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
-    bio: "Experienced software developer and educator with 8+ years in web development. Passionate about teaching modern JavaScript frameworks and best practices.",
-    website: "https://johndoe.dev",
-    linkedin: "https://linkedin.com/in/johndoe",
-    twitter: "@johndoe",
-    avatar: null as string | null,
-    specializations: ["React", "JavaScript", "Node.js", "TypeScript"],
-    hourlyRate: 85,
-    totalStudents: 1247,
-    totalCourses: 12,
-    averageRating: 4.8
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError, error, refetch } = useQuery<RawUserProfile>({
+    queryKey: ["profile"],
+    queryFn: async () => api.getUserProfile(),
+    staleTime: 30_000,
   });
+
+  const [profile, setProfile] = useState<TeacherProfileView>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    location: "",
+    bio: "",
+    website: "",
+    linkedin: "",
+    twitter: "",
+    avatar: null,
+    specializations: [],
+    hourlyRate: 0,
+    totalStudents: 0,
+    totalCourses: 0,
+    averageRating: 0,
+  });
+
+  useEffect(() => {
+    if (!data) return;
+    const socialRaw = data.socialLinks || data.socialLink || [];
+    const { website, linkedin, twitter } = extractLinks(Array.isArray(socialRaw) ? socialRaw : []);
+    setProfile((prev) => ({
+      ...prev,
+      firstName: data.firstName || "",
+      lastName: data.lastName || "",
+      email: data.email || "",
+      phone: (data as RawUserProfile).phone || "",
+      location: (data as RawUserProfile).location || "",
+      bio: data.bio || "",
+      website,
+      linkedin,
+      twitter,
+      avatar: data.profilePhoto_url || data.profileImageUrl || null,
+      specializations: (data.skills || data.skill || []) as string[],
+    }));
+  }, [data]);
 
   const [passwords, setPasswords] = useState({
     current: "",
@@ -62,25 +137,57 @@ export function TeacherProfile() {
     allowMessages: true
   });
 
-  const handleProfileUpdate = () => {
-    // Profile update logic would go here
-    console.log("Profile updated:", profile);
+  const handleProfileUpdate = async () => {
+    try {
+      const links = [profile.website, profile.linkedin, profile.twitter].filter(Boolean);
+      await api.updateUserProfile({
+        bio: profile.bio,
+        socialLink: links,
+        skill: profile.specializations,
+      });
+      // refresh cache/state
+      const updatedRaw = await api.getUserProfile();
+      queryClient.setQueryData(["profile"], updatedRaw);
+      toast({ title: "Profile updated" });
+    } catch (e) {
+      toast({ title: "Failed to update profile", variant: "destructive" });
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (passwords.new !== passwords.confirm) {
-      alert("New passwords don't match");
+      toast({ title: "New passwords don't match", variant: "destructive" });
       return;
     }
-    // Password change logic would go here
-    console.log("Password changed");
-    setPasswords({ current: "", new: "", confirm: "" });
+    try {
+      await api.changeUserPassword({ currentPassword: passwords.current, newPassword: passwords.new, retryPassword: passwords.confirm });
+      toast({ title: "Password changed" });
+      setPasswords({ current: "", new: "", confirm: "" });
+    } catch (e) {
+      toast({ title: "Failed to change password", variant: "destructive" });
+    }
   };
 
   const handleAvatarUpload = () => {
-    // Avatar upload logic would go here
-    console.log("Avatar upload");
+    // Optional: wire a file input here like in ProfilePage if needed
+    toast({ title: "Avatar upload not implemented", description: "Use main Profile page to change photo." });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[40vh] flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="text-destructive text-sm">
+        {(error as Error)?.message || "Failed to load profile"}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -114,7 +221,7 @@ export function TeacherProfile() {
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={profile.avatar || ""} />
                     <AvatarFallback className="text-lg">
-                      {profile.firstName[0]}{profile.lastName[0]}
+                      {profile.firstName[0] || "?"}{profile.lastName[0] || ""}
                     </AvatarFallback>
                   </Avatar>
                   <Button onClick={handleAvatarUpload} size="sm">
@@ -213,7 +320,7 @@ export function TeacherProfile() {
                     id="hourlyRate"
                     type="number"
                     value={profile.hourlyRate}
-                    onChange={(e) => setProfile({...profile, hourlyRate: parseInt(e.target.value)})}
+                    onChange={(e) => setProfile({...profile, hourlyRate: parseInt(e.target.value || "0")})}
                   />
                 </div>
               </div>
@@ -264,7 +371,7 @@ export function TeacherProfile() {
                     id="twitter"
                     value={profile.twitter}
                     onChange={(e) => setProfile({...profile, twitter: e.target.value})}
-                    placeholder="@username"
+                    placeholder="@username or https://twitter.com/username"
                   />
                 </div>
               </div>
@@ -299,8 +406,28 @@ export function TeacherProfile() {
                 ))}
               </div>
               <div className="flex space-x-2">
-                <Input placeholder="Add specialization" />
-                <Button variant="outline">Add</Button>
+                <Input
+                  placeholder="Add specialization"
+                  onKeyDown={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (e.key === "Enter" && target.value.trim()) {
+                      setProfile({ ...profile, specializations: [...profile.specializations, target.value.trim()] });
+                      target.value = "";
+                    }
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const input = document.querySelector<HTMLInputElement>("input[placeholder='Add specialization']");
+                    if (input && input.value.trim()) {
+                      setProfile({ ...profile, specializations: [...profile.specializations, input.value.trim()] });
+                      input.value = "";
+                    }
+                  }}
+                >
+                  Add
+                </Button>
               </div>
             </CardContent>
           </Card>

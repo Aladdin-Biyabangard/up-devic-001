@@ -566,8 +566,7 @@ export interface User {
   lastName: string;
   email: string;
   // Keep existing single role for compatibility, but prefer roles[]
-  role?: "USER" | "STUDENT" | "TEACHER" | "ADMIN";
-  roles?: Array<"USER" | "STUDENT" | "TEACHER" | "ADMIN">;
+  roles?: Array<"ROLE_USER" | "ROLE_STUDENT" | "ROLE_TEACHER" | "ROLE_ADMIN">;
   profileImageUrl?: string;
   status?: 'ACTIVE' | 'INACTIVE';
   createdAt?: string;

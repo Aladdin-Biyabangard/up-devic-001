@@ -23,9 +23,8 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const roles: string[] = Array.isArray(user?.role)
-    ? (user?.role as string[])
-    : ((user as any)?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+  const roles: string[] = user?.roles
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +77,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
 
         {/* User Actions */}
         <div className="flex items-center gap-4">
-          {user && roles?.includes('STUDENT') && (
+          {user && roles?.includes('ROLE_STUDENT') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
               <Link to="/student" className="gap-2">
                 <PanelsTopLeft className="h-4 w-4" />
@@ -86,7 +85,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
               </Link>
             </Button>
           )}
-          {user && roles?.includes('TEACHER') && (
+          {user && roles?.includes('ROLE_TEACHER') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
               <Link to="/teacher" className="gap-2">
                 <PanelsTopLeft className="h-4 w-4" />
@@ -94,7 +93,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
               </Link>
             </Button>
           )}
-          {user?.role?.includes?.('ADMIN') && (
+          {user?.roles?.includes?.('ROLE_ADMIN') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
               <Link to="/admin" className="gap-2">
                 <PanelsTopLeft className="h-4 w-4" />
@@ -124,7 +123,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                {roles?.includes('STUDENT') && (
+                {roles?.includes('ROLE_STUDENT') && (
                   <DropdownMenuItem asChild>
                     <Link to="/student" className="cursor-pointer">
                       <PanelsTopLeft className="mr-2 h-4 w-4" />
@@ -132,7 +131,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {roles?.includes('TEACHER') && (
+                {roles?.includes('ROLE_TEACHER') && (
                   <DropdownMenuItem asChild>
                     <Link to="/teacher" className="cursor-pointer">
                       <PanelsTopLeft className="mr-2 h-4 w-4" />
@@ -140,7 +139,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {user?.role?.includes?.('ADMIN') && (
+                {user?.role?.includes?.('ROLE_ADMIN') && (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="cursor-pointer">
                       <PanelsTopLeft className="mr-2 h-4 w-4" />
