@@ -154,8 +154,8 @@ export default function DashboardPage() {
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										{teacherCourses.slice(0, 6).map((c) => (
 											<Card key={c.courseId} className="overflow-hidden">
-												{c.imageUrl && (
-													<img src={c.imageUrl} alt={c.title} className="w-full h-32 object-cover" />
+												{c.photo_url && (
+													<img src={c.photo_url} alt={c.title} className="w-full h-32 object-cover" />
 												)}
 												<CardHeader className="py-3">
 													<CardTitle className="text-base">{c.title}</CardTitle>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Star, Clock, Users, Heart } from "lucide-react";
 import { Course } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useTeacherInfo, getTeacherDisplayName } from "@/hooks/use-teacher-cache";
 
 interface CourseCardProps {
   course: Course;
@@ -22,6 +23,8 @@ export function CourseCard({
   className 
 }: CourseCardProps) {
   
+  const { teacherInfo, loading: teacherLoading } = useTeacherInfo(course.teacherId);
+  
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -35,9 +38,9 @@ export function CourseCard({
       <div className="relative overflow-hidden">
         {/* Course Image */}
         <div className="aspect-video bg-gradient-muted relative">
-          {course.imageUrl ? (
+          {course.photo_url ? (
             <img 
-              src={course.imageUrl} 
+              src={course.photo_url} 
               alt={course.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
@@ -86,7 +89,13 @@ export function CourseCard({
 
           <div className="flex items-center gap-1 text-sm">
             <span className="text-muted-foreground">by</span>
-            <span className="font-medium text-primary">{course.teacherName}</span>
+            <span className="font-medium text-primary">
+              {teacherLoading ? (
+                <span className="bg-muted animate-pulse rounded w-20 h-4 inline-block" />
+              ) : (
+                getTeacherDisplayName(teacherInfo)
+              )}
+            </span>
           </div>
 
           {/* Course Stats */}

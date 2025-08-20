@@ -124,7 +124,6 @@ export class ApiClient {
         return await response.json();
       }
       const text = await response.text();
-      // @ts-expect-error allow plain text returns
       return text as T;
     } catch (error) {
       console.error("API request failed:", error);
@@ -299,6 +298,10 @@ export class ApiClient {
   // Teacher endpoints
   async getTeacherInfo(): Promise<any> {
     return this.request("/teacher/info");
+  }
+
+  async getTeacherById(teacherId: string): Promise<TeacherInfo> {
+    return this.request(`/api/teacher/${teacherId}/info`);
   }
 
   async getTeacherCourses(): Promise<Course[]> {
@@ -478,8 +481,8 @@ export interface Course {
   price: number;
   rating: number;
   category: string;
-  imageUrl?: string;
-  teacherName: string;
+  photo_url?: string;
+  teacherId: string;
   duration: string;
   studentsCount: number;
 }
@@ -556,4 +559,10 @@ export interface PagedCommentsResponse {
 export interface CategoryDto {
   category: string;
   courseCount: number;
+}
+
+export interface TeacherInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
 }
