@@ -498,6 +498,23 @@ export class ApiClient {
       method: 'DELETE'
     }) as Promise<void>;
   }
+
+  // Wishlist endpoints
+  async addToWishlist(courseId: string): Promise<void> {
+    return this.request(`/api/v1/course/${courseId}/wish`, {
+      method: 'POST'
+    }) as Promise<void>;
+  }
+
+  async removeFromWishlist(courseId: string): Promise<void> {
+    return this.request(`/api/v1/course/${courseId}/wish`, {
+      method: 'DELETE'
+    }) as Promise<void>;
+  }
+
+  async getWishlistCourses(): Promise<Course[]> {
+    return this.request('/api/v1/course/wish') as Promise<Course[]>;
+  }
 }
 
 export const api = ApiClient.getInstance();

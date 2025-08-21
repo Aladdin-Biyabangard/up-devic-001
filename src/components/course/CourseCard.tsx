@@ -6,30 +6,26 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Star, Clock, Users, Heart } from "lucide-react";
 import { Course } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useWishlist } from "@/contexts/WishlistContext";
 import TeacherName from "@/components/teacher/TeacherName";
 
 interface CourseCardProps {
   course: Course;
   showWishlist?: boolean;
-  onWishlistToggle?: (courseId: string) => void;
-  isWishlisted?: boolean;
   className?: string;
 }
 
 export function CourseCard({ 
   course, 
   showWishlist = true, 
-  onWishlistToggle,
-  isWishlisted = false,
   className 
 }: CourseCardProps) {
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
-  const handleWishlistClick = (e: React.MouseEvent) => {
+  const handleWishlistClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onWishlistToggle) {
-      onWishlistToggle(course?.courseId);
-    }
+    await toggleWishlist(course);
   };
 
   return (
@@ -48,7 +44,7 @@ export function CourseCard({
           >
             <Heart className={cn(
               "h-4 w-4 transition-colors",
-              isWishlisted ? "fill-red-500 text-red-500" : "text-muted-foreground"
+              isInWishlist(course.courseId) ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-400"
             )} />
           </Button>
         )}
