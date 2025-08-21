@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, BookOpen, User, Settings, LogOut, Menu, PanelsTopLeft } from "lucide-react";
+import { Search, BookOpen, User, Settings, LogOut, Menu, PanelsTopLeft, Heart } from "lucide-react";
+import { GoToWishlistButton } from "@/components/ui/go-to-wishlist-button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -100,6 +101,14 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                 Admin Panel
               </Link>
             </Button>
+          )}
+          
+          {user && (
+            <GoToWishlistButton 
+              variant="ghost" 
+              size="sm" 
+              className="hidden md:flex"
+            />
           )}
           {user ? (
             <DropdownMenu>

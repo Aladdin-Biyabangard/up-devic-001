@@ -9,8 +9,9 @@ import { api, Course } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Search, TrendingUp, BookOpen, Users, GraduationCap, ArrowRight } from "lucide-react";
+import { Search, TrendingUp, BookOpen, Users, GraduationCap, ArrowRight, Heart } from "lucide-react";
 import heroImage from "@/assets/hero-education.jpg";
+import { GoToWishlistButton } from "@/components/ui/go-to-wishlist-button";
 
 export default function HomePage() {
   const [popularCourses, setPopularCourses] = useState<Course[]>([]);
@@ -128,6 +129,14 @@ export default function HomePage() {
               >
                 Admin Panel
               </Button>
+            )}
+            
+            {user && (
+              <GoToWishlistButton 
+                variant="outline" 
+                size="lg" 
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              />
             )}
           </div>
         </div>
