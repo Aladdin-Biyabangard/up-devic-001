@@ -35,6 +35,8 @@ interface Lesson {
   courseName: string;
   order?: number;
   photoUrl?: string;
+  isPublished?: boolean;
+  materials?: string[];
 }
 
 interface Course { courseId: string; title: string }
@@ -428,7 +430,10 @@ export function LessonManagement() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => togglePublishStatus(lesson.id)}
+                              onClick={() => {
+                                // TODO: Implement toggle publish status
+                                console.log('Toggle publish status for lesson:', lesson.id);
+                              }}
                             >
                               {lesson.isPublished ? 'Unpublish' : 'Publish'}
                             </Button>

@@ -1,76 +1,217 @@
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, Course } from "@/lib/api";
-import { Card } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useToast } from "@/hooks/use-toast";
-import { CourseCard, CourseCardSkeleton } from "@/components/course/CourseCard";
-import { Heart, LayoutGrid, List } from "lucide-react";
-import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import { Heart, Star, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
-type WishlistResponse = {
-  content: Course[];
-  totalPages: number;
-  totalElements: number;
-  number: number;
-  size: number;
-};
+// Dummy data for wishlist courses
+const wishlistCourses = [
+  {
+    courseId: "1",
+    category: "FULLSTACK",
+    photo_url: "https://placehold.co/600x400",
+    headTeacher: 42,
+    title: "Fullstack Web Development",
+    description: "Learn to build modern web applications from scratch using modern technologies and best practices.",
+    level: "BEGINNER",
+    lessonCount: 24,
+    studentCount: 1200,
+    rating: 4.5,
+    price: 199,
+  },
+  {
+    courseId: "2",
+    category: "FRONTEND",
+    photo_url: "https://placehold.co/600x400",
+    headTeacher: 56,
+    title: "React Mastery",
+    description: "Advanced techniques and best practices in React development for professional applications.",
+    level: "INTERMEDIATE",
+    lessonCount: 18,
+    studentCount: 900,
+    rating: 4.8,
+    price: 149,
+  },
+  {
+    courseId: "3",
+    category: "BACKEND",
+    photo_url: "https://placehold.co/600x400",
+    headTeacher: 31,
+    title: "Node.js & Express",
+    description: "Build scalable backend applications with Node.js, Express, and modern database technologies.",
+    level: "INTERMEDIATE",
+    lessonCount: 20,
+    studentCount: 750,
+    rating: 4.6,
+    price: 179,
+  },
+  {
+    courseId: "4",
+    category: "MOBILE",
+    photo_url: "https://placehold.co/600x400",
+    headTeacher: 28,
+    title: "React Native Development",
+    description: "Create cross-platform mobile applications using React Native and modern mobile development patterns.",
+    level: "ADVANCED",
+    lessonCount: 16,
+    studentCount: 650,
+    rating: 4.7,
+    price: 229,
+  },
+];
+
+interface Course {
+  courseId: string;
+  category: string;
+  photo_url: string;
+  headTeacher: number;
+  title: string;
+  description: string;
+  level: string;
+  lessonCount: number;
+  studentCount: number;
+  rating: number;
+  price: number;
+}
+
+interface CourseCardProps {
+  course: Course;
+  onRemoveFromWishlist: (courseId: string) => void;
+}
+
+function WishlistCourseCard({ course, onRemoveFromWishlist }: CourseCardProps) {
+  const [isWishlisted, setIsWishlisted] = useState(true);
+  
+  const handleWishlistToggle = () => {
+    setIsWishlisted(false);
+    onRemoveFromWishlist(course.courseId);
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'FULLSTACK': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+      case 'FRONTEND': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+      case 'BACKEND': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
+      case 'MOBILE': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300';
+    }
+  };
+
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'BEGINNER': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300';
+      case 'INTERMEDIATE': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
+      case 'ADVANCED': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300';
+    }
+  };
+
+  return (
+    <div className="animate-scale-in">
+      <Card className="rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group hover-scale">
+        <div className="relative">
+          {/* Course Image */}
+          <div className="aspect-video relative overflow-hidden">
+            <img
+              src={course.photo_url}
+              alt={course.title}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            />
+            {/* Wishlist Heart Button */}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute top-3 right-3 h-10 w-10 p-0 bg-white/80 backdrop-blur hover:bg-white/90 hover:scale-110 transition-all duration-200"
+              onClick={handleWishlistToggle}
+            >
+              <Heart className={`h-5 w-5 transition-colors ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
+            </Button>
+          </div>
+          
+          {/* Badges */}
+          <div className="absolute top-3 left-3 flex gap-2">
+            <Badge className={`text-xs font-medium ${getCategoryColor(course.category)}`}>
+              {course.category}
+            </Badge>
+            <Badge className={`text-xs font-medium ${getLevelColor(course.level)}`}>
+              {course.level}
+            </Badge>
+          </div>
+        </div>
+
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            {/* Title */}
+            <h3 className="text-xl font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+              {course.title}
+            </h3>
+            
+            {/* Teacher */}
+            <p className="text-sm text-muted-foreground">
+              Teacher #{course.headTeacher}
+            </p>
+            
+            {/* Description */}
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+              {course.description}
+            </p>
+
+            {/* Course Stats */}
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-4">
+                {/* Lessons Count */}
+                <span className="text-muted-foreground">
+                  {course.lessonCount} lessons
+                </span>
+                
+                {/* Students Count */}
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>{course.studentCount.toLocaleString()} students</span>
+                </div>
+              </div>
+              
+              {/* Rating */}
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <span className="font-medium text-foreground">{course.rating}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="p-6 pt-0 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-3xl font-bold text-primary">
+              ${course.price}
+            </span>
+          </div>
+          
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+            <Link to={`/courses/${course.courseId}`}>
+              View Course
+            </Link>
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
 
 export default function WishlistPage() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(12);
-  const [grid, setGrid] = useState(true);
+  const [courses, setCourses] = useState(wishlistCourses);
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["wishlist", page, size],
-    queryFn: () => api.getWishlist(page, size) as Promise<any>,
-    staleTime: 20_000,
-  }) as any;
-
-  const courses = data?.content || [];
-  const totalPages = data?.totalPages || 0;
-
-  const wishlistSet = useMemo(() => new Set(courses.map(c => c.courseId)), [courses]);
-
-  const { mutate: toggleWishlist, isPending: isToggling } = useMutation({
-    mutationFn: async (courseId: string) => {
-      if (wishlistSet.has(courseId)) {
-        return api.removeCourseFromWishlist(courseId);
-      }
-      return api.addCourseToWishlist(courseId);
-    },
-    onSuccess: async () => {
-      toast({ title: "Wishlist updated" });
-      await queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-    },
-    onError: (e: any) => {
-      toast({ title: "Action failed", description: e?.message, variant: "destructive" as any });
-    },
-  }) as any;
-
-  const { mutate: rate, isPending: isRating } = useMutation({
-    mutationFn: async ({ courseId, rating }: { courseId: string; rating: number }) => {
-      return api.rateCourse(courseId, rating);
-    },
-    onSuccess: async () => {
-      toast({ title: "Rating saved" });
-      await queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-    },
-    onError: (e: any) => {
-      toast({ title: "Rating failed", description: e?.message, variant: "destructive" as any });
-    },
-  }) as any;
+  const handleRemoveFromWishlist = (courseId: string) => {
+    setCourses(prev => prev.filter(course => course.courseId !== courseId));
+  };
 
   if (!isAuthenticated) {
     return (
       <div className="container mx-auto max-w-3xl px-4 sm:px-6 md:px-8 py-10">
-        <Card className="p-8 text-center">
+        <Card className="p-8 text-center rounded-2xl shadow-md">
           <h2 className="text-xl font-semibold mb-2">Please sign in to view your wishlist</h2>
           <p className="text-muted-foreground mb-4">Your saved courses appear here once you are logged in.</p>
           <Button asChild>
@@ -82,90 +223,50 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 sm:px-6 md:px-8 py-6 md:py-10">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">My Wishlist</h1>
-        <div className="flex gap-2">
-          <Button size="sm" variant={grid ? "default" : "outline"} onClick={() => setGrid(true)}>
-            <LayoutGrid className="h-4 w-4 mr-2" /> Grid
-          </Button>
-          <Button size="sm" variant={!grid ? "default" : "outline"} onClick={() => setGrid(false)}>
-            <List className="h-4 w-4 mr-2" /> List
-          </Button>
-        </div>
+    <div className="container mx-auto max-w-7xl px-4 sm:px-6 md:px-8 py-6 md:py-10">
+      {/* Page Header */}
+      <div className="mb-8 animate-fade-in">
+        <h1 className="text-4xl font-bold text-foreground mb-2">
+          My Wishlist
+        </h1>
+        <p className="text-muted-foreground">
+          {courses.length} course{courses.length !== 1 ? 's' : ''} saved for later
+        </p>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: size }).map((_, i) => (
-            <CourseCardSkeleton key={i} />
-          ))}
+      {/* Course Grid */}
+      {courses.length === 0 ? (
+        /* Empty State */
+        <div className="text-center py-20 animate-scale-in">
+          <div className="max-w-md mx-auto">
+            <div className="w-24 h-24 mx-auto mb-6 bg-muted rounded-full flex items-center justify-center">
+              <Heart className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">Your wishlist is empty</h2>
+            <p className="text-muted-foreground mb-8">
+              Start exploring our courses and save the ones you're interested in.
+            </p>
+            <Button size="lg" asChild>
+              <Link to="/courses">Browse Courses</Link>
+            </Button>
+          </div>
         </div>
-      ) : isError ? (
-        <div className="text-destructive">{(error as any)?.message || "Failed to load wishlist"}</div>
-      ) : courses.length === 0 ? (
-        <Card className="p-6 text-center text-muted-foreground">No items in your wishlist yet.</Card>
       ) : (
-        <div className={grid ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-4"}>
-          {courses.map((course) => (
-            <div key={course.courseId} className={grid ? "" : "border rounded-lg p-2"}>
-              <CourseCard 
-                course={course}
-                onWishlistToggle={(id) => toggleWishlist(id)}
-                isWishlisted={true}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
+          {courses.map((course, index) => (
+            <div
+              key={course.courseId}
+              className="animate-fade-in"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <WishlistCourseCard 
+                course={course} 
+                onRemoveFromWishlist={handleRemoveFromWishlist}
               />
-              {/* Interactive rating stars */}
-              <div className="mt-2 flex items-center gap-1 px-1">
-                {Array.from({ length: 5 }).map((_, idx) => {
-                  const value = idx + 1;
-                  const active = value <= Math.round(course.rating || 0);
-                  return (
-                    <button
-                      key={value}
-                      className={`p-1 transition-transform hover:scale-110 ${active ? "text-yellow-400" : "text-muted-foreground"}`}
-                      aria-label={`Rate ${value}`}
-                      onClick={() => rate({ courseId: course.courseId, rating: value })}
-                      disabled={isRating}
-                    >
-                      {/* simple star */}
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                        <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                      </svg>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-6">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); setPage((p) => Math.max(0, p - 1)); }}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <span className="px-3 py-2 text-sm text-muted-foreground">Page {page + 1} of {totalPages}</span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => { e.preventDefault(); setPage((p) => Math.min(totalPages - 1, p + 1)); }}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
         </div>
       )}
     </div>
   );
 }
-
-

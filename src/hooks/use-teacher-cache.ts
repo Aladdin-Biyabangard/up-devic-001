@@ -5,7 +5,7 @@ import { api, TeacherInfo } from '@/lib/api';
 const teacherCache = new Map<string, TeacherInfo>();
 const teacherPromises = new Map<string, Promise<TeacherInfo>>();
 
-export function useTeacherInfo(teacherId: number) {
+export function useTeacherInfo(teacherId: string | number) {
   const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,16 +21,18 @@ export function useTeacherInfo(teacherId: number) {
       return;
     }
 
+    const teacherIdStr = String(teacherId);
+
     // Check cache first
-    if (teacherCache.has(teacherId)) {
-      setTeacherInfo(teacherCache.get(teacherId)!);
+    if (teacherCache.has(teacherIdStr)) {
+      setTeacherInfo(teacherCache.get(teacherIdStr)!);
       setLoading(false);
       return;
     }
 
     // Check if there's already a pending request
-    if (teacherPromises.has(teacherId)) {
-      teacherPromises.get(teacherId)!
+    if (teacherPromises.has(teacherIdStr)) {
+      teacherPromises.get(teacherIdStr)!
         .then((info) => {
           setTeacherInfo(info);
           setLoading(false);
@@ -43,18 +45,18 @@ export function useTeacherInfo(teacherId: number) {
     }
 
     // Make the API call
-    const promise = api.getTeacherById(teacherId);
-    teacherPromises.set(teacherId, promise);
+    const promise = api.getTeacherById(String(teacherId));
+    teacherPromises.set(teacherIdStr, promise);
 
     promise
       .then((info) => {
-        teacherCache.set(teacherId, info);
-        teacherPromises.delete(teacherId);
+        teacherCache.set(teacherIdStr, info);
+        teacherPromises.delete(teacherIdStr);
         setTeacherInfo(info);
         setLoading(false);
       })
       .catch((err) => {
-        teacherPromises.delete(teacherId);
+        teacherPromises.delete(teacherIdStr);
         setError(err.message);
         setLoading(false);
       });

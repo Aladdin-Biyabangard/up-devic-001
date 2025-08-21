@@ -14,10 +14,9 @@ export const TeacherName: React.FC<TeacherNameProps> = ({
   className,
   skeletonWidthClass = "w-24",
 }) => {
-  const id = teacherId != null ? String(teacherId) : "";
-  const { teacherInfo, loading, error } = useTeacherInfo(id);
+  const { teacherInfo, loading, error } = useTeacherInfo(teacherId || "");
 
-  if (!id && fallbackName) {
+  if (!teacherId && fallbackName) {
     return <span className={className}>{fallbackName}</span>;
   }
 
