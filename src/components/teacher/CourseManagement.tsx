@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Edit, Users, Plus } from "lucide-react";
+import { Upload, Edit, Users, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { api, Course, CategoryDto, User } from "@/lib/api";
+import { api, Course, CategoryDto, User, API_BASE_URL } from "@/lib/api";
+import axios from "axios";
 
 type EditableCourse = Course & { level?: string };
 
@@ -18,6 +20,7 @@ export function CourseManagement() {
   const [courses, setCourses] = useState<EditableCourse[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [mutating, setMutating] = useState<boolean>(false);
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -147,6 +150,27 @@ export function CourseManagement() {
     } catch (e: any) {
       toast({ title: "Failed to assign teacher", description: e?.message, variant: "destructive" as any });
     } finally {
+      setMutating(false);
+    }
+  };
+
+  const onDeleteCourse = async (courseId: string) => {
+    try {
+      setMutating(true);
+      setDeletingCourseId(courseId);
+      const token = localStorage.getItem('auth_token');
+      await axios.delete(`${API_BASE_URL}/v1/course/${courseId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Accept': 'application/json, text/plain, */*'
+        }
+      });
+      toast({ title: "Course deleted" });
+      await refreshCourses();
+    } catch (e: any) {
+      toast({ title: "Failed to delete course", description: e?.message || 'Please try again.', variant: "destructive" as any });
+    } finally {
+      setDeletingCourseId(null);
       setMutating(false);
     }
   };
@@ -346,6 +370,33 @@ export function CourseManagement() {
                       </div>
                     </DialogContent>
                   </Dialog>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="destructive" className="hover:bg-red-700" disabled={mutating && deletingCourseId === course.courseId}>
+                        {mutating && deletingCourseId === course.courseId ? (
+                          <span>Deleting...</span>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-1" /> Delete
+                          </>
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this course?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => onDeleteCourse(course.courseId)}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

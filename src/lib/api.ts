@@ -1,5 +1,5 @@
 // API Configuration and utilities for UpDevic Course Platform
-const API_BASE_URL = "https://up-devic-001.onrender.com/api";
+export const API_BASE_URL = "https://up-devic-001.onrender.com/api";
 
 // JWT Token management
 interface JWTPayload {

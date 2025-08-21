@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CommentsGrid } from "@/components/ui/comments-grid";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Clock } from "lucide-react";
@@ -171,23 +172,8 @@ const LessonPage = () => {
               <CardContent className="space-y-4">
                 {isCommentsLoading ? (
                   <div className="flex justify-center p-6"><LoadingSpinner /></div>
-                ) : comments.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No comments yet.</div>
                 ) : (
-                  comments.map((c) => (
-                    <div key={c.commentId} className="p-4 rounded-md border bg-card/50 hover:bg-accent/40 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback>{initialAvatar(c.firstName)}</AvatarFallback>
-                          </Avatar>
-                          <div className="font-medium">{c.firstName}</div>
-                        </div>
-                        <div className="text-xs text-muted-foreground">{formatDate(c.updatedAt)}</div>
-                      </div>
-                      <p className="mt-2 text-sm text-foreground/90">{c.content}</p>
-                    </div>
-                  ))
+                  <CommentsGrid comments={comments} formatDate={formatDate} />
                 )}
                 <div className="flex items-center justify-between pt-2">
                   <Button variant="outline" onClick={() => setCommentsPage((p) => Math.max(0, p - 1))} disabled={commentsPage === 0}>

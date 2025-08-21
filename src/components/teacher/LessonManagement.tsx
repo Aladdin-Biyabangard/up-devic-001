@@ -22,8 +22,9 @@ import {
   Download
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, API_BASE_URL } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
 
 interface Lesson {
   id: string;
@@ -141,9 +142,19 @@ export function LessonManagement() {
   const handleDeleteLesson = async (id: string) => {
     try {
       setMutating(true);
-      await api.deleteLesson(String(id));
-      toast({ title: "Lesson deleted" });
-      setLessons(lessons.filter(lesson => lesson.id !== id));
+      const token = localStorage.getItem('auth_token');
+      const res = await axios.delete(`${API_BASE_URL}/v1/lessons/${id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Accept': 'application/json, text/plain, */*'
+        }
+      });
+      if (res.status === 204 || res.status === 200) {
+        toast({ title: "Lesson deleted" });
+        setLessons((prev) => prev.filter(lesson => lesson.id !== id));
+      } else {
+        throw new Error(`Unexpected status ${res.status}`);
+      }
     } catch (e: any) {
       toast({ title: "Failed to delete", description: e?.message, variant: "destructive" as any });
     } finally {
@@ -185,22 +196,22 @@ export function LessonManagement() {
     if (!file || !photoUploadLessonId) return;
     try {
       setMutating(true);
-      await api.uploadLessonPhoto(String(photoUploadLessonId), file);
-      toast({ title: "Lesson photo updated" });
-      const lesson = lessons.find(l => l.id === photoUploadLessonId);
-      if (lesson) {
-        const items = await api.getLessonsByCourse(String(lesson.courseId));
-        const mapped = (items || []).map((li: any) => ({
-          id: String(li.lessonId ?? li.id ?? ""),
-          title: li.title,
-          description: li.description,
-          duration: li.duration,
-          order: li.order,
-          photoUrl: li.photoUrl,
-          courseId: String(lesson.courseId),
-          courseName: lesson.courseName,
-        })) as Lesson[];
-        setLessons((prev) => [...prev.filter(l => l.courseId !== String(lesson.courseId)), ...mapped]);
+      const token = localStorage.getItem('auth_token');
+      const form = new FormData();
+      form.append('multipartFile', file);
+      const res = await axios.patch(`${API_BASE_URL}/v1/lessons/${photoUploadLessonId}/photo`, form, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Accept': 'application/json, text/plain, */*'
+        }
+      });
+      if (res.status === 204 || res.status === 200) {
+        toast({ title: "Lesson photo updated" });
+        const previewUrl = URL.createObjectURL(file);
+        setLessons((prev) => prev.map(l => l.id === photoUploadLessonId ? { ...l, photoUrl: previewUrl } : l));
+        setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
+      } else {
+        throw new Error(`Unexpected status ${res.status}`);
       }
     } catch (e: any) {
       toast({ title: "Failed to upload photo", description: e?.message, variant: "destructive" as any });
@@ -400,6 +411,20 @@ export function LessonManagement() {
                             )}
                           </div>
                           <div className="flex items-center space-x-2">
+                            <div className="w-28 h-16 bg-muted rounded overflow-hidden">
+                              {lesson.photoUrl ? (
+                                <img src={lesson.photoUrl} alt={lesson.title} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }} />
+                              ) : (
+                                <img src="/placeholder.svg" alt="placeholder" className="w-full h-full object-cover opacity-80" />
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => triggerPhotoUpload(lesson.id)}
+                            >
+                              <Upload className="h-4 w-4 mr-1" /> Change Photo
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
@@ -424,7 +449,7 @@ export function LessonManagement() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete Lesson</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to delete "{lesson.title}"? This action cannot be undone.
+                                    Are you sure you want to delete this lesson?
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
