@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthUtils } from "@/utils/auth";
 import { 
   Home, 
   BookOpen, 
@@ -13,12 +14,13 @@ import {
   BarChart3,
   Users
 } from "lucide-react";
+import type { UserRole } from "@/types/user";
 
 interface NavigationItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  role?: 'ROLE_STUDENT' | 'ROLE_TEACHER' | 'ROLE_ADMIN';
+  role?: UserRole;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -44,11 +46,10 @@ interface NavigationProps {
 export function Navigation({ vertical = false, className, onItemClick }: NavigationProps) {
   const location = useLocation();
   const { user } = useAuth();
-  const roles: string[] = (user as any)?.roles || (user?.role ? [user.role] : JSON.parse(localStorage.getItem('auth_roles') || '[]'));
   
   const filteredItems = navigationItems.filter(item => {
     if (!item.role) return true;
-    return roles.includes(item.role);
+    return AuthUtils.hasRole(user, item.role);
   });
 
   const containerClasses = vertical 

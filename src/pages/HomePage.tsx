@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CourseCard, CourseCardSkeleton } from "@/components/course/CourseCard";
@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, Course } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Search, TrendingUp, BookOpen, Users, GraduationCap, ArrowRight, Heart } from "lucide-react";
 import heroImage from "@/assets/hero-education.jpg";
 import { GoToWishlistButton } from "@/components/ui/go-to-wishlist-button";
+import { AuthUtils } from "@/utils/auth";
+import { NavigationUtils } from "@/utils/navigation";
 
 export default function HomePage() {
   const [popularCourses, setPopularCourses] = useState<Course[]>([]);
@@ -22,9 +23,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const roles: string[] = Array.isArray(user?.role)
-    ? (user?.role as string[])
-    : ((user as any)?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+  const roles = AuthUtils.getUserRoles(user);
 
   useEffect(() => {
     loadInitialData();
@@ -52,9 +51,7 @@ export default function HomePage() {
   };
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      window.location.href = `/courses?search=${encodeURIComponent(searchQuery)}`;
-    }
+    NavigationUtils.searchCourses(searchQuery, navigate);
   };
 
   const stats = [

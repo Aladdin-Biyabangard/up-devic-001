@@ -1,15 +1,8 @@
 // API Configuration and utilities for UpDevic Course Platform
 export const API_BASE_URL = "https://up-devic-001.onrender.com/api";
 
-// JWT Token management
-interface JWTPayload {
-  exp: number;
-  sub: string;
-  email: string;
-  // Some backends provide a single role, others provide an array
-  role?: string;
-  roles?: Array<"ROLE_USER" | "ROLE_STUDENT" | "ROLE_TEACHER" | "ROLE_ADMIN" | string>;
-}
+// Import interfaces from separate file for better organization
+import type { User as UserType, UserRole, JWTPayload, AuthResponse, UserProfile as UserProfileType, ProfileDto } from '@/types/user';
 
 export class ApiClient {
   private static instance: ApiClient;
@@ -168,20 +161,20 @@ export class ApiClient {
     );
   }
 
-  // Wishlist endpoints
-  async getWishlist(page: number = 0, size: number = 12): Promise<any> {
+  // Wishlist endpoints - Standardized naming
+  async getWishlistCourses(page: number = 0, size: number = 12): Promise<Course[]> {
     return this.request(`/v1/course/wish?page=${page}&size=${size}`, {
       method: "GET",
     });
   }
 
-  async addCourseToWishlist(courseId: string): Promise<any> {
+  async addToWishlist(courseId: string): Promise<void> {
     return this.request(`/v1/course/${courseId}/wish`, {
       method: "POST",
     });
   }
 
-  async removeCourseFromWishlist(courseId: string): Promise<any> {
+  async removeFromWishlist(courseId: string): Promise<void> {
     return this.request(`/v1/course/${courseId}/wish`, {
       method: "DELETE",
     });
@@ -202,7 +195,7 @@ export class ApiClient {
     return this.request(`/v1/lessons/${lessonId}`);
   }
 
-  async login(credentials: { email: string; password: string }): Promise<any> {
+  async login(credentials: { email: string; password: string }): Promise<AuthResponse> {
     return this.request("/v1/auth/sign-in", {
       method: "POST",
       body: JSON.stringify(credentials),
@@ -214,7 +207,7 @@ export class ApiClient {
     password: string;
     firstName: string;
     lastName: string;
-  }): Promise<any> {
+  }): Promise<AuthResponse> {
     return this.request("/v1/auth/sign-up", {
       method: "POST",
       body: JSON.stringify(userData),
@@ -254,7 +247,7 @@ export class ApiClient {
     }
   }
 
-  async getUserProfile(): Promise<UserProfile> {
+  async getUserProfile(): Promise<UserProfileType> {
     return this.request("/users/profile");
   }
 
@@ -447,20 +440,20 @@ export class ApiClient {
   }
 
   // Admin endpoints (for admin panel functionality)
-  async getAllUsers(afterId?: string, limit?: number): Promise<User[]> {
+  async getAllUsers(afterId?: string, limit?: number): Promise<UserType[]> {
     const params = new URLSearchParams();
     if (afterId) params.append('afterId', afterId);
     if (limit) params.append('limit', limit.toString());
     const query = params.toString() ? `?${params.toString()}` : '';
-    return this.request(`/api/v1/admin/users${query}`) as Promise<User[]>;
+    return this.request(`/api/v1/admin/users${query}`) as Promise<UserType[]>;
   }
 
   async getUsersCount(): Promise<{ count: number }> {
     return this.request('/api/v1/admin/users/count') as Promise<{ count: number }>;
   }
 
-  async getUsersByRole(role: string): Promise<User[]> {
-    return this.request(`/api/v1/admin/role?role=${role}`) as Promise<User[]>;
+  async getUsersByRole(role: string): Promise<UserType[]> {
+    return this.request(`/api/v1/admin/role?role=${role}`) as Promise<UserType[]>;
   }
 
   async removeUserRole(userId: string, role: string): Promise<void> {
@@ -498,36 +491,11 @@ export class ApiClient {
       method: 'DELETE'
     }) as Promise<void>;
   }
-
-  // Wishlist endpoints
-  async addToWishlist(courseId: string): Promise<void> {
-    return this.request(`/api/v1/course/${courseId}/wish`, {
-      method: 'POST'
-    }) as Promise<void>;
-  }
-
-  async removeFromWishlist(courseId: string): Promise<void> {
-    return this.request(`/api/v1/course/${courseId}/wish`, {
-      method: 'DELETE'
-    }) as Promise<void>;
-  }
-
-  async getWishlistCourses(): Promise<Course[]> {
-    return this.request('/api/v1/course/wish') as Promise<Course[]>;
-  }
 }
 
 export const api = ApiClient.getInstance();
 
 // Type definitions based on the API
-export interface UserProfile {
-  firstName: string;
-  lastName: string;
-  profilePhoto_url?: string;
-  bio?: string;
-  socialLinks?: string[];
-  skills?: string[];
-}
 export interface Course {
   courseId: string;
   title: string;
@@ -577,12 +545,12 @@ export interface Lesson {
   order: number;
 }
 
-export interface User {
+// Keep existing User interface for API compatibility
+export interface ApiUser {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  // Keep existing single role for compatibility, but prefer roles[]
   role?: "ROLE_USER" | "ROLE_STUDENT" | "ROLE_TEACHER" | "ROLE_ADMIN";
   roles?: Array<"ROLE_USER" | "ROLE_STUDENT" | "ROLE_TEACHER" | "ROLE_ADMIN">;
   profileImageUrl?: string;

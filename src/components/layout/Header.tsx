@@ -14,6 +14,8 @@ import { Search, BookOpen, User, Settings, LogOut, Menu, PanelsTopLeft, Heart } 
 import { GoToWishlistButton } from "@/components/ui/go-to-wishlist-button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthUtils } from "@/utils/auth";
+import { NavigationUtils } from "@/utils/navigation";
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -24,13 +26,17 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const roles: string[] = user?.roles
+  const roles = AuthUtils.getUserRoles(user);
 
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim() && onSearch) {
-      onSearch(searchQuery.trim());
+    if (searchQuery.trim()) {
+      if (onSearch) {
+        onSearch(searchQuery.trim());
+      } else {
+        NavigationUtils.searchCourses(searchQuery, navigate);
+      }
     }
   };
 
@@ -78,7 +84,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
 
         {/* User Actions */}
         <div className="flex items-center gap-4">
-          {user && roles?.includes('ROLE_STUDENT') && (
+          {user && AuthUtils.hasRole(user, 'ROLE_STUDENT') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
               <Link to="/student" className="gap-2">
                 <PanelsTopLeft className="h-4 w-4" />
@@ -86,7 +92,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
               </Link>
             </Button>
           )}
-          {user && roles?.includes('ROLE_TEACHER') && (
+          {user && AuthUtils.hasRole(user, 'ROLE_TEACHER') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
               <Link to="/teacher" className="gap-2">
                 <PanelsTopLeft className="h-4 w-4" />
@@ -94,7 +100,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
               </Link>
             </Button>
           )}
-          {user?.roles?.includes?.('ROLE_ADMIN') && (
+          {user && AuthUtils.hasRole(user, 'ROLE_ADMIN') && (
             <Button variant="secondary" className="hidden md:flex" asChild>
               <Link to="/admin" className="gap-2">
                 <PanelsTopLeft className="h-4 w-4" />
@@ -115,9 +121,9 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.profileImageUrl} alt={user.firstName} />
+                    <AvatarImage src={user.profileImageUrl} alt={AuthUtils.getUserDisplayName(user)} />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                      {user.firstName?.[0]}{user.lastName?.[0]}
+                      {AuthUtils.getUserInitials(user)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -125,14 +131,14 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
               <DropdownMenuContent className="w-56" align="end">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user.firstName} {user.lastName}</p>
+                    <p className="font-medium">{AuthUtils.getUserDisplayName(user)}</p>
                     <p className="w-[200px] truncate text-sm text-muted-foreground">
                       {user.email}
                     </p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                {roles?.includes('ROLE_STUDENT') && (
+                {AuthUtils.hasRole(user, 'ROLE_STUDENT') && (
                   <DropdownMenuItem asChild>
                     <Link to="/student" className="cursor-pointer">
                       <PanelsTopLeft className="mr-2 h-4 w-4" />
@@ -140,7 +146,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {roles?.includes('ROLE_TEACHER') && (
+                {AuthUtils.hasRole(user, 'ROLE_TEACHER') && (
                   <DropdownMenuItem asChild>
                     <Link to="/teacher" className="cursor-pointer">
                       <PanelsTopLeft className="mr-2 h-4 w-4" />
@@ -148,7 +154,7 @@ export function Header({ onSearch, onMenuToggle }: HeaderProps) {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {user?.role?.includes?.('ROLE_ADMIN') && (
+                {AuthUtils.hasRole(user, 'ROLE_ADMIN') && (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="cursor-pointer">
                       <PanelsTopLeft className="mr-2 h-4 w-4" />

@@ -10,7 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Edit, Users, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { api, Course, CategoryDto, User, API_BASE_URL } from "@/lib/api";
+import { api, Course, CategoryDto, API_BASE_URL } from "@/lib/api";
+import { User } from "@/types/user";
 import axios from "axios";
 
 type EditableCourse = Course & { level?: string };
@@ -131,12 +132,12 @@ export function CourseManagement() {
   const openAssignDialog = async (courseId: string) => {
     try {
       setIsAssignOpen(courseId);
-      // Prefer admin endpoint to list teachers
       const list = await api.getUsersByRole("ROLE_TEACHER");
       setTeachers(Array.isArray(list) ? list : []);
       setSelectedTeacherId("");
-    } catch (e: any) {
-      toast({ title: "Failed to load teachers", description: e?.message, variant: "destructive" as any });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast({ title: "Failed to load teachers", description: message, variant: "destructive" });
     }
   };
 

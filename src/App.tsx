@@ -25,12 +25,17 @@ import OtpVerificationPage from "./pages/OtpVerificationPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import PaymentStatusPage from "./pages/PaymentStatusPage";
 import { TeacherProfile } from "./components/teacher/TeacherProfile";
+import { WishlistProvider } from "./contexts/WishlistContext";
+import { NavigationUtils } from "@/utils/navigation";
+import { useNavigate } from "react-router-dom";
+import type { User } from "@/types/user";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { loading, user } = useAuth();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -45,7 +50,7 @@ const AppContent = () => {
       <Header 
         onMenuToggle={() => setSidebarOpen(true)}
         onSearch={(query) => {
-          window.location.href = `/courses?search=${encodeURIComponent(query)}`;
+          NavigationUtils.searchCourses(query, navigate);
         }}
       />
       
@@ -85,13 +90,15 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
+        <WishlistProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </TooltipProvider>
+        </WishlistProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
@@ -99,11 +106,10 @@ const App = () => {
 
 export default App;
 
-function AdminRoute({ user }: { user: any }) {
-  console.log(user)
+function AdminRoute({ user }: { user: User | null }) {
   const roles: string[] = Array.isArray(user?.role)
     ? (user?.role as string[])
-    : ((user as any)?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
+    : (user?.roles || JSON.parse(localStorage.getItem('auth_roles') || '[]'));
   if (!user || !roles.includes('ROLE_ADMIN')) {
     return <Navigate to="/auth" replace />;
   }
