@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 // Removed dialog usage for lessons; navigating to standalone lesson page
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CommentsGrid } from "@/components/ui/comments-grid";
+import { CommentList } from "@/components/ui/comment-list";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
 import { Star, Share2, Heart, Users, GraduationCap, BookOpen, CalendarDays, DollarSign, ArrowLeft, ArrowRight } from "lucide-react";
@@ -129,6 +129,12 @@ const CourseDetailPage = () => {
 
   const comments = commentsResponse?.content ?? [];
   const canGoNext = comments.length === commentsPageSize; // optimistic pagination
+
+  const handleAddComment = async (content: string) => {
+    const newComment = await api.addCommentToCourse(courseId, content);
+    // Refetch comments to show the new one
+    refetchComments();
+  };
 
   // Selected lesson details
   // Lesson details are handled in the dedicated Lesson Page
@@ -383,25 +389,21 @@ const CourseDetailPage = () => {
             <Card className="shadow-md">
               <CardHeader>
                 <CardTitle>Comments</CardTitle>
-                <CardDescription>
-                  {isCommentsLoading ? "Loading comments..." : isCommentsError ? (commentsError as any)?.message : `${comments.length} comments on this page`}
-                </CardDescription>
+                <CardDescription>Share your thoughts about this course</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {isCommentsLoading ? (
-                  <div className="flex justify-center p-6"><LoadingSpinner /></div>
-                ) : (
-                  <CommentsGrid comments={comments} formatDate={formatDate} />
-                )}
-                <div className="flex items-center justify-between pt-2">
-                  <Button variant="outline" onClick={() => setCommentsPage((p) => Math.max(0, p - 1))} disabled={commentsPage === 0}>
-                    <ArrowLeft className="h-4 w-4" /> Previous
-                  </Button>
-                  <div className="text-sm text-muted-foreground">Page {commentsPage + 1}</div>
-                  <Button variant="outline" onClick={() => setCommentsPage((p) => p + 1)} disabled={!canGoNext}>
-                    Next <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
+              <CardContent>
+                <CommentList
+                  comments={comments}
+                  onAddComment={handleAddComment}
+                  formatDate={formatDate}
+                  isLoading={isCommentsLoading}
+                  isError={isCommentsError}
+                  error={commentsError}
+                  currentPage={commentsPage}
+                  onPreviousPage={() => setCommentsPage((p) => Math.max(0, p - 1))}
+                  onNextPage={() => setCommentsPage((p) => p + 1)}
+                  canGoNext={canGoNext}
+                />
               </CardContent>
             </Card>
           </div>

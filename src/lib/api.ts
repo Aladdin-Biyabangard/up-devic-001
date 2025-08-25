@@ -302,10 +302,17 @@ export class ApiClient {
     });
   }
 
-  async addCommentToCourse(courseId: string, comment: string): Promise<any> {
-    return this.request(`/v1/comments/courses${courseId}`, {
+  async addCommentToCourse(courseId: string, content: string): Promise<{ commentId: number; firstName: string; content: string; updatedAt: string }> {
+    return this.request(`/v1/comments/courses/${courseId}`, {
       method: "POST",
-      body: JSON.stringify({ content: comment }),
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async addCommentToLesson(lessonId: string, content: string): Promise<{ commentId: number; firstName: string; content: string; updatedAt: string }> {
+    return this.request(`/v1/comments/lessons/${lessonId}`, {
+      method: "POST",
+      body: JSON.stringify({ content }),
     });
   }
 
