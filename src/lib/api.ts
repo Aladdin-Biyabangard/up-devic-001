@@ -295,6 +295,13 @@ export class ApiClient {
     return this.request(`/v1/comments/lessons/${lessonId}?page=${page}&size=${size}`);
   }
 
+  async updateComment(commentId: string, content: string): Promise<void> {
+    return this.request(`/v1/comments/${commentId}`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    });
+  }
+
   async addCommentToCourse(courseId: string, comment: string): Promise<any> {
     return this.request(`/v1/comments/courses${courseId}`, {
       method: "POST",

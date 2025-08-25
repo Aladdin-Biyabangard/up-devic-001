@@ -1,6 +1,7 @@
 import * as React from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { CommentCard } from "@/components/ui/comment-card";
+import { CommentEditor } from "@/components/ui/comment-editor";
 
 type CommentItem = {
   commentId: string | number;
@@ -16,18 +17,36 @@ type CommentsGridProps = {
 };
 
 export const CommentsGrid: React.FC<CommentsGridProps> = ({ comments, formatDate, className }) => {
-  if (!comments || comments.length === 0) {
+  const [localComments, setLocalComments] = useState(comments || []);
+
+  React.useEffect(() => {
+    setLocalComments(comments || []);
+  }, [comments]);
+
+  const handleCommentUpdate = (commentId: string | number, newContent: string) => {
+    setLocalComments(prev => 
+      prev.map(comment => 
+        comment.commentId === commentId 
+          ? { ...comment, content: newContent }
+          : comment
+      )
+    );
+  };
+
+  if (!localComments || localComments.length === 0) {
     return <div className={cn("text-sm text-muted-foreground", className)}>No comments yet.</div>;
   }
 
   return (
     <div className={cn("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4", className)}>
-      {comments.map((c) => (
-        <CommentCard
+      {localComments.map((c) => (
+        <CommentEditor
           key={String(c.commentId)}
+          commentId={String(c.commentId)}
+          initialContent={c.content}
           author={c.firstName}
-          content={c.content}
           date={formatDate ? formatDate(c.updatedAt) : c.updatedAt}
+          onUpdate={(newContent) => handleCommentUpdate(c.commentId, newContent)}
         />
       ))}
     </div>
